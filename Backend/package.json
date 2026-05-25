@@ -1,21 +1,37 @@
 {
-  "name": "backend",
+  "name": "parallel-coder-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Realtime collaboration backend for Parallel Coder",
   "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx nodemon server.js",
-    "start": "node server.js"
+  "main": "server.js",
 
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "yjs": "node websocket/yjs-server.js"
   },
-  "keywords": [],
-  "author": "",
+
+  "keywords": [
+    "parallel-coder",
+    "socketio",
+    "yjs",
+    "collaboration",
+    "realtime"
+  ],
+
+  "author": "Bhaskar Kumar",
   "license": "ISC",
+
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
-    "y-socket.io": "^1.1.3"
+    "ws": "^8.18.3",
+    "y-websocket": "^2.1.0",
+    "yjs": "^13.6.30"
+  },
+
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

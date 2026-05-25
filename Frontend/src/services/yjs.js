@@ -1,37 +1,27 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { MonacoBinding } from "y-monaco";
 
-/*
-  Persistent docs cache
-*/
-const docs = new Map();
+const rooms =
+  new Map();
 
-export const setupYjs = (
-  editor,
-  roomId = "parallel-room"
+const COLORS = [
+  "#3B82F6",
+  "#10B981",
+  "#F59E0B",
+  "#EF4444",
+  "#A855F7",
+  "#EC4899",
+];
+
+export const getYjsRoom = (
+  roomId
 ) => {
-  /*
-    Reuse existing room
-  */
-  if (docs.has(roomId)) {
-    const existing =
-      docs.get(roomId);
-
-    new MonacoBinding(
-      existing.yText,
-      editor.getModel(),
-      new Set([editor]),
-      existing.provider.awareness
-    );
-
-    return existing;
+  if (rooms.has(roomId)) {
+    return rooms.get(roomId);
   }
 
-  /*
-    Create new room
-  */
-  const ydoc = new Y.Doc();
+  const ydoc =
+    new Y.Doc();
 
   const provider =
     new WebsocketProvider(
@@ -40,23 +30,46 @@ export const setupYjs = (
       ydoc
     );
 
-  const yText =
-    ydoc.getText("monaco");
+  const awareness =
+    provider.awareness;
 
-  new MonacoBinding(
-    yText,
-    editor.getModel(),
-    new Set([editor]),
-    provider.awareness
-  );
+  const color =
+    COLORS[
+      Math.floor(
+        Math.random() *
+          COLORS.length
+      )
+    ];
+
+  const username =
+    `Guest-${Math.floor(
+      Math.random() * 999
+    )}`;
+
+  awareness.setLocalState({
+    user: {
+      name:
+        username,
+      color,
+    },
+
+    cursor: null,
+  });
 
   const room = {
     ydoc,
     provider,
-    yText,
+    awareness,
+    text:
+      ydoc.getText(
+        "monaco"
+      ),
   };
 
-  docs.set(roomId, room);
+  rooms.set(
+    roomId,
+    room
+  );
 
   return room;
 };

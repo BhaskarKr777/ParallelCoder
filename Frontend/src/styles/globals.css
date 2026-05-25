@@ -1,2 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+/* ==========================
+   YJS REMOTE CURSOR
+========================== */
+
+.remote-cursor {
+  position: relative;
+  border-left-width: 2px;
+  border-left-style: solid;
+  height: 100%;
+}
+
+.remote-cursor::after {
+  position: absolute;
+  top: -18px;
+  left: -2px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  z-index: 9999;
+  background: var(--user-color);
+  content: attr(data-user-name);
+}
+
+.remote-selection {
+  opacity: 0.18;
+  border-radius: 2px;
+}
+
+.yRemoteSelection {
+  opacity: 0.22;
+  border-radius: 2px;
+}
+
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left-width: 2px;
+  border-left-style: solid;
+  height: 100%;
+}
+
+.yRemoteSelectionHead::after {
+  position: absolute;
+  top: -20px;
+  left: -2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 9999;
+}

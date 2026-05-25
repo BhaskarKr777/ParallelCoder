@@ -1,3 +1,4 @@
+import * as monaco from "monaco-editor";
 import {
   useEffect,
   useRef,
@@ -24,7 +25,12 @@ const MonacoEditor = ({
     monaco
   ) => {
     editorRef.current =
-      editor;
+      editor.updateOptions({
+  cursorSmoothCaretAnimation:
+    "on",
+  smoothScrolling:
+    true,
+});
 
     /*
       Parallel Luxury Theme

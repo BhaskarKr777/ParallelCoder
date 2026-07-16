@@ -1,24 +1,30 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+import usePresenceStore from "../store/presenceStore";
 
 const rooms =
   new Map();
 
-const COLORS = [
-  "#3B82F6",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#A855F7",
-  "#EC4899",
-];
-
 export const getYjsRoom = (
   roomId
 ) => {
-  if (rooms.has(roomId)) {
-    return rooms.get(roomId);
+  /*
+    Existing room
+  */
+  if (
+    rooms.has(roomId)
+  ) {
+    return rooms.get(
+      roomId
+    );
   }
+
+  /*
+    Shared user identity
+  */
+  const currentUser =
+    usePresenceStore.getState()
+      .currentUser;
 
   const ydoc =
     new Y.Doc();
@@ -33,24 +39,25 @@ export const getYjsRoom = (
   const awareness =
     provider.awareness;
 
-  const color =
-    COLORS[
-      Math.floor(
-        Math.random() *
-          COLORS.length
-      )
-    ];
-
-  const username =
-    `Guest-${Math.floor(
-      Math.random() * 999
-    )}`;
-
+  /*
+    Use SAME identity
+    as Team Space
+  */
   awareness.setLocalState({
     user: {
       name:
-        username,
-      color,
+        currentUser
+          ?.username ||
+        "Guest",
+
+      color:
+        currentUser
+          ?.color ||
+        "#3B82F6",
+
+      socketId:
+        currentUser
+          ?.socketId,
     },
 
     cursor: null,
@@ -60,6 +67,7 @@ export const getYjsRoom = (
     ydoc,
     provider,
     awareness,
+
     text:
       ydoc.getText(
         "monaco"

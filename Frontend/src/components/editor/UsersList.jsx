@@ -5,7 +5,7 @@ const UsersList = () => {
     usePresenceStore();
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden min-h-0">
       {/* Header */}
       <div className="px-6 pt-7 pb-5 border-b border-neutral-900">
         <div className="flex items-center justify-between">
@@ -33,41 +33,33 @@ const UsersList = () => {
       <div className="px-6 py-4 border-b border-neutral-900">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-3">
-            {users.map(
-              (user) => (
-                <div
-                  key={
-                    user.socketId
-                  }
-                  className="
-                    w-11 h-11
-                    rounded-full
-                    border-[3px]
-                    border-[#090909]
-                    flex items-center justify-center
-                    text-sm font-semibold
-                    text-white
-                    shadow-lg
-                  "
-                  style={{
-                    background:
-                      user.color,
-                  }}
-                >
-                  {user.username?.[0]?.toUpperCase()}
-                </div>
-              )
-            )}
+            {users.map((user) => (
+              <div
+                key={user.socketId}
+                className="
+                  w-11 h-11
+                  rounded-full
+                  border-[3px]
+                  border-[#090909]
+                  flex items-center justify-center
+                  text-sm font-semibold
+                  text-white
+                  shadow-lg
+                "
+                style={{
+                  background:
+                    user.color,
+                }}
+              >
+                {user.username?.[0]?.toUpperCase()}
+              </div>
+            ))}
           </div>
 
           <div>
             <p className="text-sm text-white font-medium">
-              {
-                users.length
-              }{" "}
-              collaborator
-              {users.length !==
-              1
+              {users.length} collaborator
+              {users.length !== 1
                 ? "s"
                 : ""}
             </p>
@@ -79,14 +71,13 @@ const UsersList = () => {
         </div>
       </div>
 
-      {/* Collaborators */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-2">
-        {users.map(
-          (user) => (
+      {/* Scrollable Content */}
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scroll">
+        {/* Collaborators */}
+        <div className="px-4 py-5 space-y-3">
+          {users.map((user) => (
             <div
-              key={
-                user.socketId
-              }
+              key={user.socketId}
               className="
                 rounded-[22px]
                 border border-neutral-900
@@ -116,17 +107,14 @@ const UsersList = () => {
                 >
                   {user.username?.[0]?.toUpperCase()}
 
-                  {/* Online Dot */}
                   <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-[3px] border-[#101010]" />
                 </div>
 
-                {/* Info */}
+                {/* User Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-white font-medium">
-                      {
-                        user.username
-                      }
+                      {user.username}
                     </h3>
 
                     <span className="text-xs px-2 py-1 rounded-full bg-white/[0.04] text-neutral-400 border border-white/[0.04]">
@@ -134,38 +122,23 @@ const UsersList = () => {
                     </span>
                   </div>
 
-                  <p className="text-sm text-neutral-500 mt-2">
-                    {user.editing
-                      ? `Editing ${user.editing}`
-                      : "Idle"}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-neutral-500 text-sm">
+                      {user.editing
+                        ? "Editing"
+                        : "Idle"}
+                    </span>
+
+                    {user.editing && (
+                      <div className="inline-flex items-center rounded-full bg-white/[0.04] border border-white/[0.04] px-3 py-1 text-xs text-neutral-300">
+                        {user.editing}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          )
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-5 border-t border-neutral-900">
-        <div
-          className="
-            rounded-[22px]
-            bg-[#101010]
-            border border-neutral-900
-            p-5
-          "
-        >
-          <p className="text-white text-sm font-medium">
-            Workspace Presence
-          </p>
-
-          <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-            All collaborators are
-            synced in realtime
-            across files and editor
-            sessions.
-          </p>
+          ))}
         </div>
       </div>
     </div>

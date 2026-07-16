@@ -5,17 +5,32 @@ import usePresenceStore from "../store/presenceStore";
 export const usePresence =
   () => {
     const {
-      addUser,
       removeUser,
+      setUserEditing,
+      setCurrentUser,
+      setUsers,
     } =
       usePresenceStore();
 
     useEffect(() => {
       /*
-        Unique user per browser tab
+        Shared colors
+      */
+      const colors = [
+        "#3B82F6",
+        "#10B981",
+        "#F59E0B",
+        "#EF4444",
+        "#A855F7",
+        "#EC4899",
+      ];
+
+      /*
+        Unique user per tab
       */
       const user = {
-        id: socket.id,
+        socketId:
+          socket.id,
 
         username:
           "Guest-" +
@@ -25,7 +40,22 @@ export const usePresence =
           ),
 
         avatar: "👨‍💻",
+
+        color:
+          colors[
+            Math.floor(
+              Math.random() *
+                colors.length
+            )
+          ],
       };
+
+      /*
+        Save globally
+      */
+      setCurrentUser(
+        user
+      );
 
       /*
         Join workspace
@@ -57,8 +87,25 @@ export const usePresence =
               ).values()
             );
 
-          unique.forEach(
-            addUser
+          /*
+            Replace full list
+          */
+          setUsers(
+            unique
+          );
+        };
+
+      /*
+        Live editing
+      */
+      const handleEditing =
+        ({
+          socketId,
+          file,
+        }) => {
+          setUserEditing(
+            socketId,
+            file
           );
         };
 
@@ -67,10 +114,20 @@ export const usePresence =
         handleUsers
       );
 
+      socket.on(
+        "user-editing",
+        handleEditing
+      );
+
       return () => {
         socket.off(
           "workspace-users",
           handleUsers
+        );
+
+        socket.off(
+          "user-editing",
+          handleEditing
         );
 
         removeUser(
@@ -78,4 +135,6 @@ export const usePresence =
         );
       };
     }, []);
+
+    return null;
   };

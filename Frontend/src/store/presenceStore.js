@@ -1,99 +1,90 @@
 import { create } from "zustand";
 
-const COLORS = [
-  "#3B82F6",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#EC4899",
-];
-
 const usePresenceStore =
   create((set) => ({
+    /*
+      All collaborators
+    */
     users: [],
 
-    setUsers: (
-      users
-    ) =>
-      set({
-        users,
-      }),
+    /*
+      Current local user
+    */
+    currentUser:
+      null,
 
-    addUser: (
-      user
-    ) =>
-      set((state) => {
-        const exists =
-          state.users.find(
-            (u) =>
-              u.socketId ===
-              user.socketId
-          );
+    /*
+      Local identity
+    */
+    setCurrentUser:
+      (user) =>
+        set({
+          currentUser:
+            user,
+        }),
 
-        if (exists) {
-          return {
-            users:
-              state.users.map(
-                (u) =>
-                  u.socketId ===
-                  user.socketId
-                    ? {
-                        ...u,
-                        ...user,
-                      }
-                    : u
-              ),
-          };
-        }
+    /*
+      Replace full users list
+      from socket event
+    */
+    setUsers:
+      (users) =>
+        set({
+          users:
+            users.map(
+              (user) => ({
+                ...user,
+                editing:
+                  user.editing ||
+                  null,
+              })
+            ),
+        }),
 
-        return {
-          users: [
-            ...state.users,
-            {
-              ...user,
-              color:
-                COLORS[
-                  Math.floor(
-                    Math.random() *
-                      COLORS.length
-                  )
-                ],
-            },
-          ],
-        };
-      }),
+    /*
+      Remove user
+      on disconnect
+    */
+    removeUser:
+      (
+        socketId
+      ) =>
+        set((state) => ({
+          users:
+            state.users.filter(
+              (
+                user
+              ) =>
+                user.socketId !==
+                socketId
+            ),
+        })),
 
-    updateEditingFile: (
-      socketId,
-      file
-    ) =>
-      set((state) => ({
-        users:
-          state.users.map(
-            (u) =>
-              u.socketId ===
-              socketId
-                ? {
-                    ...u,
-                    editing:
-                      file,
-                  }
-                : u
-          ),
-      })),
-
-    removeUser: (
-      socketId
-    ) =>
-      set((state) => ({
-        users:
-          state.users.filter(
-            (u) =>
-              u.socketId !==
-              socketId
-          ),
-      })),
+    /*
+      Live editing state
+    */
+    setUserEditing:
+      (
+        socketId,
+        file
+      ) =>
+        set((state) => ({
+          users:
+            state.users.map(
+              (
+                user
+              ) =>
+                user.socketId ===
+                socketId
+                  ? {
+                      ...user,
+                      editing:
+                        file,
+                    }
+                  : user
+            ),
+        })),
   }));
 
-export default usePresenceStore;
+export default
+  usePresenceStore;

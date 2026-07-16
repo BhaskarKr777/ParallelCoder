@@ -45,13 +45,48 @@ const activeUsers =
 /* --------------------------------
    Socket Events
 -------------------------------- */
+
 io.on(
   "connection",
   (socket) => {
+    socket.on(
+      "send-message",
+      ({
+        workspaceId,
+        message,
+        user,
+      }) => {
+
+        console.log(
+          "MESSAGE RECEIVED:",
+          {
+            workspaceId,
+            message,
+            user,
+          }
+        );
+
+        io.to(
+          workspaceId
+        ).emit(
+          "receive-message",
+          {
+            id:
+              `${socket.id}-${Date.now()}`,
+
+            user,
+
+            message,
+
+            createdAt:
+              new Date().toISOString(),
+          }
+        );
+      }
+    );
     console.log(
       `🟢 User Connected: ${socket.id}`
     );
-
     /*
       Join Workspace
     */
@@ -73,7 +108,7 @@ io.on(
               socket.id,
             workspaceId,
             editing:
-              "Idle",
+              null,
           }
         );
 

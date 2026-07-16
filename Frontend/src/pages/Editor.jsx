@@ -1,8 +1,4 @@
-import {
-  useState,
-  useEffect,
-} from "react";
-
+import { useState, useEffect, } from "react";
 import ActivityBar from "../components/editor/ActivityBar";
 import Explorer from "../components/editor/Explorer";
 import EditorTabs from "../components/editor/EditorTabs";
@@ -11,6 +7,7 @@ import CollaborationPanel from "../components/editor/CollaborationPanel";
 import BottomPanel from "../components/editor/BottomPanel";
 import Topbar from "../components/editor/Topbar";
 
+import { useChat } from "../context/useChat";
 import { workspaceFiles } from "../data/mockWorkspace";
 import { usePresence } from "../context/usePresence";
 
@@ -18,6 +15,7 @@ import socket from "../services/socket";
 
 const Editor = () => {
   usePresence();
+  useChat();
 
   const [openTabs, setOpenTabs] =
     useState([]);
@@ -63,7 +61,7 @@ const Editor = () => {
     ) {
       setActiveTab(
         filtered[
-          filtered.length - 1
+        filtered.length - 1
         ] || null
       );
     }
@@ -165,10 +163,14 @@ const Editor = () => {
             <div
               className="
                 w-[340px]
+                h-full
+                min-h-0
                 rounded-[28px]
                 border border-neutral-900
                 bg-[#090909]
                 overflow-hidden
+                flex
+                flex-col
               "
             >
               <CollaborationPanel />

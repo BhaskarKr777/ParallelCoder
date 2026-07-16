@@ -39,3 +39,13 @@ export const authApi = {
   googleUrl: `${API_BASE_URL}/auth/google`,
   githubUrl: `${API_BASE_URL}/auth/github`,
 };
+
+export const workspaceApi = {
+  list: () => request("/workspaces"),
+
+  create: (payload) =>
+    request("/workspaces", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -11,12 +11,18 @@ import {
 
 import CreateWorkspaceModal from "../components/dashboard/CreateWorkspaceModal";
 import useAuthStore from "../store/authStore";
+import useWorkspaceStore from "../store/workspaceStore";
 
 const Dashboard = () => {
   const [openModal, setOpenModal] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { workspaces, isLoading, fetchWorkspaces } = useWorkspaceStore();
+
+  useEffect(() => {
+    fetchWorkspaces();
+  }, [fetchWorkspaces]);
 
   const handleLogout = async () => {
     await logout();
@@ -139,21 +145,31 @@ const Dashboard = () => {
 
               <div className="space-y-4">
 
-                {[
-                  "React Frontend",
-                  "Node Backend",
-                  "Portfolio Website",
-                ].map((workspace) => (
+                {isLoading && (
+                  <p className="text-zinc-500 text-sm">
+                    Loading workspaces...
+                  </p>
+                )}
+
+                {!isLoading && workspaces.length === 0 && (
+                  <p className="text-zinc-500 text-sm">
+                    No workspaces yet — create one to get started.
+                  </p>
+                )}
+
+                {workspaces.map((workspace) => (
                   <div
-                    key={workspace}
+                    key={workspace.id}
+                    onClick={() => navigate("/editor")}
                     className="border border-zinc-800 rounded-2xl p-5 hover:bg-zinc-800/50 transition cursor-pointer"
                   >
                     <h3 className="font-medium text-lg">
-                      {workspace}
+                      {workspace.name}
                     </h3>
 
                     <p className="text-zinc-500 text-sm mt-1">
-                      Last edited 2h ago
+                      {workspace.memberCount} member
+                      {workspace.memberCount !== 1 ? "s" : ""} · {workspace.role}
                     </p>
                   </div>
                 ))}

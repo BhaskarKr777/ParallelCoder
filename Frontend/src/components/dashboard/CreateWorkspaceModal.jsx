@@ -1,19 +1,40 @@
+import { useState } from "react";
 import { X } from "lucide-react";
 
-const languages = [
-  "JavaScript",
-  "TypeScript",
-  "Python",
-  "Java",
-  "C++",
-  "Go",
-];
+import useWorkspaceStore from "../../store/workspaceStore";
 
 const CreateWorkspaceModal = ({
   isOpen,
   onClose,
 }) => {
+  const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
+
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setName("");
+    setError("");
+    onClose();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await createWorkspace(name);
+      handleClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6">
@@ -22,7 +43,7 @@ const CreateWorkspaceModal = ({
 
         {/* Close */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-5 right-5 w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center transition"
         >
           <X size={18} />
@@ -36,62 +57,37 @@ const CreateWorkspaceModal = ({
           Start a new collaborative coding room.
         </p>
 
-        {/* Workspace Name */}
-        <div className="mt-8">
-          <label className="text-sm text-zinc-400 mb-3 block">
-            Workspace Name
-          </label>
+        <form onSubmit={handleSubmit}>
+          {/* Workspace Name */}
+          <div className="mt-8">
+            <label className="text-sm text-zinc-400 mb-3 block">
+              Workspace Name
+            </label>
 
-          <input
-            type="text"
-            placeholder="My Awesome Project"
-            className="w-full h-14 rounded-2xl bg-zinc-900 border border-zinc-800 px-5 outline-none focus:border-zinc-600 text-white"
-          />
-        </div>
-
-        {/* Language */}
-        <div className="mt-6">
-          <label className="text-sm text-zinc-400 mb-3 block">
-            Language
-          </label>
-
-          <select className="w-full h-14 rounded-2xl bg-zinc-900 border border-zinc-800 px-5 outline-none focus:border-zinc-600 text-white">
-
-            {languages.map((lang) => (
-              <option
-                key={lang}
-                value={lang}
-              >
-                {lang}
-              </option>
-            ))}
-
-          </select>
-        </div>
-
-        {/* Visibility */}
-        <div className="mt-6">
-          <label className="text-sm text-zinc-400 mb-3 block">
-            Visibility
-          </label>
-
-          <div className="grid grid-cols-2 gap-4">
-
-            <button className="h-14 rounded-2xl border border-zinc-700 bg-zinc-900 hover:border-zinc-500 transition">
-              Private
-            </button>
-
-            <button className="h-14 rounded-2xl border border-zinc-700 bg-zinc-900 hover:border-zinc-500 transition">
-              Public
-            </button>
-
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="My Awesome Project"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full h-14 rounded-2xl bg-zinc-900 border border-zinc-800 px-5 outline-none focus:border-zinc-600 text-white"
+            />
           </div>
-        </div>
 
-        {/* Create */}
-        <button className="mt-8 w-full h-14 rounded-2xl bg-white text-black font-medium hover:bg-zinc-200 transition">
-          Create Workspace
-        </button>
+          {error && (
+            <p className="text-sm text-red-400 mt-4">{error}</p>
+          )}
+
+          {/* Create */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-8 w-full h-14 rounded-2xl bg-white text-black font-medium hover:bg-zinc-200 transition disabled:opacity-50"
+          >
+            {isSubmitting ? "Creating..." : "Create Workspace"}
+          </button>
+        </form>
       </div>
     </div>
   );

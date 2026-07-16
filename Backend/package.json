@@ -4,13 +4,11 @@
   "description": "Realtime collaboration backend for Parallel Coder",
   "type": "module",
   "main": "server.js",
-
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
     "yjs": "node websocket/yjs-server.js"
   },
-
   "keywords": [
     "parallel-coder",
     "socketio",
@@ -18,20 +16,29 @@
     "collaboration",
     "realtime"
   ],
-
   "author": "Bhaskar Kumar",
   "license": "ISC",
-
   "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
     "socket.io": "^4.8.3",
     "ws": "^8.18.3",
     "y-websocket": "^2.1.0",
-    "yjs": "^13.6.30"
+    "yjs": "^13.6.30",
+    "zod": "^4.4.3"
   },
-
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.19.3"
   }
 }

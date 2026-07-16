@@ -1,6 +1,42 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
+import useAuthStore from "../store/authStore";
+import { authApi } from "../services/api";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+
+  const [mode, setMode] = useState("signin");
+  const [form, setForm] = useState({ email: "", username: "", password: "" });
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateField = (field) => (e) =>
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      if (mode === "signin") {
+        await login({ email: form.email, password: form.password });
+      } else {
+        await register(form);
+      }
+
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="relative min-h-screen bg-black text-white overflow-hidden">
 
@@ -85,38 +121,113 @@ const Login = () => {
                   </p>
                 </div>
 
-                {/* Google Button */}
-                <button className="relative z-10 mt-10 w-full h-14 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center gap-3 text-zinc-200 font-medium">
+                {/* Mode Toggle */}
+                <div className="relative z-10 mt-8 grid grid-cols-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode("signin")}
+                    className={`h-10 rounded-xl text-sm font-medium transition ${
+                      mode === "signin"
+                        ? "bg-white text-black"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Sign In
+                  </button>
 
-                  <img
-                    src="https://www.svgrepo.com/show/475656/google-color.svg"
-                    alt="Google"
-                    className="w-5 h-5"
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className={`h-10 rounded-xl text-sm font-medium transition ${
+                      mode === "signup"
+                        ? "bg-white text-black"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+
+                {/* Auth Form */}
+                <form
+                  onSubmit={handleSubmit}
+                  className="relative z-10 mt-6 space-y-4"
+                >
+                  {mode === "signup" && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Username"
+                      value={form.username}
+                      onChange={updateField("username")}
+                      className="w-full h-12 rounded-2xl bg-zinc-900 border border-zinc-800 px-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600 transition"
+                    />
+                  )}
+
+                  <input
+                    type="email"
+                    required
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={updateField("email")}
+                    className="w-full h-12 rounded-2xl bg-zinc-900 border border-zinc-800 px-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600 transition"
                   />
 
-                  Continue with Google
-                </button>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={updateField("password")}
+                    className="w-full h-12 rounded-2xl bg-zinc-900 border border-zinc-800 px-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600 transition"
+                  />
+
+                  {error && (
+                    <p className="text-sm text-red-400">{error}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full h-12 rounded-2xl bg-white text-black font-medium hover:bg-zinc-200 transition disabled:opacity-50"
+                  >
+                    {isSubmitting
+                      ? "Please wait..."
+                      : mode === "signin"
+                      ? "Sign In"
+                      : "Create Account"}
+                  </button>
+                </form>
 
                 {/* Divider */}
                 <div className="relative z-10 my-8 border-t border-zinc-800" />
 
-                {/* Features */}
-                <div className="relative z-10 space-y-4">
+                {/* OAuth Buttons */}
+                <div className="relative z-10 space-y-3">
+                  <a
+                    href={authApi.googleUrl}
+                    className="h-14 w-full rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center gap-3 text-zinc-200 font-medium"
+                  >
+                    <img
+                      src="https://www.svgrepo.com/show/475656/google-color.svg"
+                      alt="Google"
+                      className="w-5 h-5"
+                    />
+                    Continue with Google
+                  </a>
 
-                  {[
-                    "Secure authentication",
-                    "Free to get started",
-                    "Realtime collaboration",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center gap-3 text-zinc-400"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-zinc-500" />
-                      {item}
-                    </div>
-                  ))}
-
+                  <a
+                    href={authApi.githubUrl}
+                    className="h-14 w-full rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center gap-3 text-zinc-200 font-medium"
+                  >
+                    <img
+                      src="https://www.svgrepo.com/show/512317/github-142.svg"
+                      alt="GitHub"
+                      className="w-5 h-5 invert"
+                    />
+                    Continue with GitHub
+                  </a>
                 </div>
 
                 {/* Footer */}

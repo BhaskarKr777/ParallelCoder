@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Folder,
@@ -9,9 +10,18 @@ import {
 } from "lucide-react";
 
 import CreateWorkspaceModal from "../components/dashboard/CreateWorkspaceModal";
+import useAuthStore from "../store/authStore";
 
 const Dashboard = () => {
   const [openModal, setOpenModal] = useState(false);
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <section className="min-h-screen bg-[#09090B] text-white flex">
@@ -53,7 +63,10 @@ const Dashboard = () => {
         </div>
 
         {/* Logout */}
-        <button className="flex items-center gap-3 text-zinc-500 hover:text-white transition">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-zinc-500 hover:text-white transition"
+        >
           <LogOut size={20} />
           Logout
         </button>
@@ -78,7 +91,7 @@ const Dashboard = () => {
               </p>
 
               <h1 className="text-4xl sm:text-5xl font-semibold mt-2 tracking-tight">
-                Welcome back, Bhaskar 👋
+                Welcome back, {user?.username || "there"} 👋
               </h1>
 
               <p className="text-zinc-400 mt-3 text-lg">

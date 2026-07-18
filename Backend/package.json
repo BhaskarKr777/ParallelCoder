@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "yjs": "node websocket/yjs-server.js"
+    "yjs": "node websocket/yjs-server.js",
+    "test": "vitest run"
   },
   "keywords": [
     "parallel-coder",
@@ -40,6 +41,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import socket from "../services/socket";
 import usePresenceStore from "../store/presenceStore";
+import useAuthStore from "../store/authStore";
 
 export const usePresence =
   (workspaceId) => {
@@ -30,28 +31,34 @@ export const usePresence =
       ];
 
       /*
-        Unique user per tab
+        Real identity comes from the authenticated
+        session; only the color is client-chosen.
       */
+      const authUser =
+        useAuthStore.getState()
+          .user;
+
+      const color =
+        colors[
+          Math.floor(
+            Math.random() *
+              colors.length
+          )
+        ];
+
       const user = {
         socketId:
           socket.id,
 
         username:
-          "Guest-" +
-          Math.floor(
-            Math.random() *
-              1000
-          ),
+          authUser?.username ||
+          "Guest",
 
-        avatar: "👨‍💻",
+        avatar:
+          authUser?.avatar ||
+          "👨‍💻",
 
-        color:
-          colors[
-            Math.floor(
-              Math.random() *
-                colors.length
-            )
-          ],
+        color,
       };
 
       /*
@@ -67,13 +74,15 @@ export const usePresence =
 
       /*
         Join workspace
+        (server derives identity from the session;
+        only the cosmetic color is sent)
       */
       socket.emit(
         "join-workspace",
         {
           workspaceId,
 
-          user,
+          color,
         }
       );
 

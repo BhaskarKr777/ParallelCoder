@@ -6,6 +6,7 @@ Backend/node_modules/
 # build files
 dist/
 build/
+Backend/Public/
 
 # environment variables
 .env

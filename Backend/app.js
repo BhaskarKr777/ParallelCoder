@@ -1,3 +1,6 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -13,7 +16,21 @@ import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 const app = express();
 
-app.use(helmet());
+/*
+  Default CSP's connect-src 'self' would block the Yjs websocket,
+  which runs on its own port/host even in production (see
+  docker-compose.yml) and so is never same-origin.
+*/
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "connect-src": ["'self'", "ws:", "wss:"],
+      },
+    },
+  })
+);
 app.use(cors({ origin: env.frontendUrl, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -45,6 +62,23 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api", fileRoutes);
+
+/*
+  Serve the built frontend (the Docker image copies Frontend's `dist`
+  output in here). Everything under /api falls through to notFound
+  above instead, and any other GET falls back to index.html so
+  client-side routing (React Router) works on a hard refresh/deep link.
+*/
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.join(__dirname, "Public");
+
+app.use(express.static(publicDir));
+
+app.get(/^(?!\/api).*/, (_req, res, next) => {
+  res.sendFile(path.join(publicDir, "index.html"), (err) => {
+    if (err) next(err);
+  });
+});
 
 app.use(notFound);
 app.use(errorHandler);

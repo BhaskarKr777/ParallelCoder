@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-parallel_coder}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parallel_coder}
+      POSTGRES_DB: ${POSTGRES_DB:-parallel_coder}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parallel_coder}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: dockerfile
+      args:
+        VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment: &backend_env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-parallel_coder}:${POSTGRES_PASSWORD:-parallel_coder}@postgres:5432/${POSTGRES_DB:-parallel_coder}?schema=public
+      PORT: "3000"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_access_secret_change_me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_me}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile
+      args:
+        VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    command: ["node", "server.js"]
+    environment: *backend_env
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  yjs:
+    build:
+      context: .
+      dockerfile: dockerfile
+      args:
+        VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    command: ["node", "websocket/yjs-server.js"]
+    environment: *backend_env
+    ports:
+      - "${YJS_PORT:-1234}:1234"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:

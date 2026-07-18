@@ -16,6 +16,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # Lets api spawn sandboxed run containers (see runner.service.js)
+  # without ever touching the host's Docker socket directly. Only
+  # the container/image operations docker run/kill/rm actually need
+  # are allowlisted; everything else (exec, volumes, swarm, the
+  # socket itself) stays denied. api talks to this over the internal
+  # compose network only - no host port is published.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      POST: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   migrate:
     build:
       context: .
@@ -46,12 +62,16 @@ services:
       args:
         VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
     command: ["node", "server.js"]
-    environment: *backend_env
+    environment:
+      <<: *backend_env
+      DOCKER_HOST: tcp://docker-proxy:2375
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
+      docker-proxy:
+        condition: service_started
 
   yjs:
     build:

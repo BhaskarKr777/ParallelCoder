@@ -22,6 +22,12 @@ FROM node:20-alpine as backend-builder
 
 WORKDIR /app
 
+# The `docker` CLI (not a daemon - just the client binary) so the
+# api service can spawn sandboxed run containers. It talks to
+# docker-proxy over DOCKER_HOST (see docker-compose.yml), never to a
+# socket mounted into this image directly.
+RUN apk add --no-cache docker-cli
+
 COPY ./Backend /app
 
 RUN npm install

@@ -1,17 +1,22 @@
 import { MonacoBinding } from "y-monaco";
 import { getYjsRoom } from "../services/yjs";
+import { filesApi } from "../services/api";
 
 let decorations =
   [];
 
+const SAVE_DEBOUNCE_MS = 1500;
+
 export const bindEditorToFile =
   (
     editor,
-    fileId
+    fileId,
+    initialContent
   ) => {
     const room =
       getYjsRoom(
-        fileId
+        fileId,
+        initialContent
       );
 
     const model =
@@ -35,6 +40,58 @@ export const bindEditorToFile =
         ]),
         room.awareness
       );
+
+    /*
+      Debounced save to DB
+    */
+    let saveTimeout = null;
+    let dirty = false;
+
+    const persist =
+      () => {
+        clearTimeout(
+          saveTimeout
+        );
+
+        saveTimeout = null;
+        dirty = false;
+
+        filesApi
+          .update(
+            fileId,
+            {
+              content:
+                room.text.toString(),
+            }
+          )
+          .catch(
+            (err) =>
+              console.error(
+                "Failed to save file:",
+                err
+              )
+          );
+      };
+
+    const scheduleSave =
+      () => {
+        clearTimeout(
+          saveTimeout
+        );
+
+        dirty = true;
+
+        saveTimeout =
+          setTimeout(
+            persist,
+            SAVE_DEBOUNCE_MS
+          );
+      };
+
+    room.ydoc.on(
+      "update",
+      scheduleSave
+    );
 
     /*
       Update local cursor
@@ -258,6 +315,15 @@ export const bindEditorToFile =
           "change",
           renderPresence
         );
+
+        room.ydoc.off(
+          "update",
+          scheduleSave
+        );
+
+        if (dirty) {
+          persist();
+        }
       },
     };
   };

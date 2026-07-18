@@ -25,6 +25,11 @@ const ChatPanel = () => {
       (state) => state.currentUser
     );
 
+  const workspaceId =
+    usePresenceStore(
+      (state) => state.workspaceId
+    );
+
   const bottomRef =
     useRef(null);
 
@@ -42,7 +47,8 @@ const ChatPanel = () => {
 
     if (
       !trimmed ||
-      !currentUser
+      !currentUser ||
+      !workspaceId
     ) {
       console.log(
         "blocked"
@@ -53,8 +59,7 @@ const ChatPanel = () => {
     socket.emit(
       "send-message",
       {
-        workspaceId:
-          "parallel-workspace",
+        workspaceId,
 
         message:
           trimmed,

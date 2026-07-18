@@ -25,15 +25,20 @@ const EditorTabs = ({
                 tab.id;
 
               return (
-                <button
+                <div
                   key={
                     tab.id
                   }
+                  role="button"
+                  tabIndex={0}
                   onClick={() =>
                     setActiveTab(
                       tab
                     )
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") setActiveTab(tab);
+                  }}
                   className={`
                     group
                     relative
@@ -44,6 +49,7 @@ const EditorTabs = ({
                     transition-all duration-300 ease-out
                     min-w-fit
                     border
+                    cursor-pointer
                     ${
                       isActive
                         ? `
@@ -121,7 +127,7 @@ const EditorTabs = ({
                       size={14}
                     />
                   </button>
-                </button>
+                </div>
               );
             }
           )

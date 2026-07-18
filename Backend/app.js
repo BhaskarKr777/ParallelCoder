@@ -7,6 +7,7 @@ import { env } from "./src/config/env.js";
 import "./src/config/passport.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import workspaceRoutes from "./src/routes/workspace.routes.js";
+import fileRoutes from "./src/routes/file.routes.js";
 import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
+app.use("/api", fileRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

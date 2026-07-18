@@ -160,7 +160,7 @@ const Dashboard = () => {
                 {workspaces.map((workspace) => (
                   <div
                     key={workspace.id}
-                    onClick={() => navigate("/editor")}
+                    onClick={() => navigate(`/editor/${workspace.id}`)}
                     className="border border-zinc-800 rounded-2xl p-5 hover:bg-zinc-800/50 transition cursor-pointer"
                   >
                     <h3 className="font-medium text-lg">

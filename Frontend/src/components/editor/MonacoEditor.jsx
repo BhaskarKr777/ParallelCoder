@@ -2,6 +2,7 @@ import * as monaco from "monaco-editor";
 import {
   useEffect,
   useRef,
+  useState,
 } from "react";
 
 import Editor from "@monaco-editor/react";
@@ -17,20 +18,22 @@ const MonacoEditor = ({
   const editorRef =
     useRef(null);
 
-  const bindingRef =
-    useRef(null);
+  const [editorReady, setEditorReady] =
+    useState(false);
 
   const handleMount = (
     editor,
     monaco
   ) => {
     editorRef.current =
-      editor.updateOptions({
-  cursorSmoothCaretAnimation:
-    "on",
-  smoothScrolling:
-    true,
-});
+      editor;
+
+    editor.updateOptions({
+      cursorSmoothCaretAnimation:
+        "on",
+      smoothScrolling:
+        true,
+    });
 
     /*
       Parallel Luxury Theme
@@ -93,57 +96,36 @@ const MonacoEditor = ({
       "parallel-dark"
     );
 
-    /*
-      Bind realtime room
-    */
-    if (
-      activeTab?.id
-    ) {
-      bindingRef.current =
-        bindEditorToFile(
-          editor,
-          activeTab.id
-        );
-    }
+    setEditorReady(true);
   };
 
   /*
-    Handle tab switching
+    Bind the active file's realtime room whenever the
+    editor becomes ready or the active tab changes.
+    The binding created here is the only one destroyed
+    in this effect's cleanup, so a tab switch can never
+    tear down (or persist through) a different tab's binding.
   */
   useEffect(() => {
     if (
+      !editorReady ||
       !editorRef.current ||
       !activeTab?.id
     ) {
       return;
     }
 
-    /*
-      Cleanup old binding
-    */
-    if (
-      bindingRef.current
-    ) {
-      bindingRef.current.destroy();
-    }
-
-    /*
-      Create new binding
-    */
-    bindingRef.current =
+    const binding =
       bindEditorToFile(
         editorRef.current,
-        activeTab.id
+        activeTab.id,
+        activeTab.content
       );
 
     return () => {
-      if (
-        bindingRef.current
-      ) {
-        bindingRef.current.destroy();
-      }
+      binding.destroy();
     };
-  }, [activeTab]);
+  }, [editorReady, activeTab]);
 
   /*
     Empty State

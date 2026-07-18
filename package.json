@@ -1,8 +1,10 @@
 {
-  "dependencies": {
-    "@monaco-editor/react": "^4.7.0",
-    "framer-motion": "^12.39.0",
-    "lucide-react": "^1.16.0",
-    "react-router-dom": "^7.15.1"
+  "name": "parallel-coder",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n BACKEND,YJS,FRONTEND -c blue,magenta,green \"npm run dev --prefix Backend\" \"npm run yjs --prefix Backend\" \"npm run dev --prefix Frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
   }
 }

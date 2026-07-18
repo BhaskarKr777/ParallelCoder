@@ -4,9 +4,29 @@ import {
   FileCode2,
   FileJson,
   FileText,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import usePresenceStore from "../../store/presenceStore";
+import { filesApi } from "../../services/api";
+
+const LANGUAGE_BY_EXTENSION = {
+  js: "javascript",
+  jsx: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  py: "python",
+  json: "json",
+  css: "css",
+  html: "html",
+  md: "markdown",
+};
+
+const inferLanguage = (fileName = "") => {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  return LANGUAGE_BY_EXTENSION[ext] || "plaintext";
+};
 
 const getFileIcon = (
   fileName = ""
@@ -43,8 +63,14 @@ const getFileIcon = (
 };
 
 const Explorer = ({
+  workspaceId,
+  projectName,
   files = [],
+  isLoading = false,
   onFileOpen,
+  onFileCreated,
+  onFileDeleted,
+  onFileRenamed,
 }) => {
   const { users } =
     usePresenceStore();
@@ -58,6 +84,40 @@ const Explorer = ({
       );
     };
 
+  const handleCreateFile = async () => {
+    const name = window.prompt("File name (e.g. index.js)");
+    if (!name?.trim()) return;
+
+    const trimmed = name.trim();
+
+    const file = await filesApi.create(workspaceId, {
+      name: trimmed,
+      path: trimmed,
+      language: inferLanguage(trimmed),
+    });
+
+    onFileCreated?.(file.file);
+  };
+
+  const handleDeleteFile = async (e, file) => {
+    e.stopPropagation();
+
+    if (!window.confirm(`Delete ${file.name}?`)) return;
+
+    await filesApi.remove(file.id);
+    onFileDeleted?.(file.id);
+  };
+
+  const handleRenameFile = async (file) => {
+    const name = window.prompt("Rename file", file.name);
+    if (!name?.trim() || name === file.name) return;
+
+    const trimmed = name.trim();
+
+    await filesApi.update(file.id, { name: trimmed });
+    onFileRenamed?.(file.id, trimmed);
+  };
+
   return (
     <div className="w-[285px] h-full bg-[#090909] flex flex-col">
       {/* Header */}
@@ -65,11 +125,11 @@ const Explorer = ({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-              Workspace
+              Project
             </p>
 
             <h2 className="text-lg font-semibold text-white mt-1">
-              Parallel
+              {projectName || "Loading..."}
             </h2>
           </div>
 
@@ -97,28 +157,50 @@ const Explorer = ({
         <div className="mb-4">
           <div
             className="
-              flex items-center gap-2
+              flex items-center justify-between
               px-3 py-2
               rounded-2xl
               text-neutral-400
               text-sm
             "
           >
-            <ChevronDown
-              size={16}
-            />
+            <div className="flex items-center gap-2">
+              <ChevronDown
+                size={16}
+              />
 
-            <Folder
-              size={17}
-            />
+              <Folder
+                size={17}
+              />
 
-            <span>
-              frontend
-            </span>
+              <span>
+                {projectName || "files"}
+              </span>
+            </div>
+
+            <button
+              onClick={handleCreateFile}
+              title="New file"
+              className="p-1 rounded-lg text-neutral-500 hover:text-white hover:bg-[#101010] transition"
+            >
+              <Plus size={16} />
+            </button>
           </div>
 
           {/* File Tree */}
           <div className="mt-2 space-y-1">
+            {isLoading && (
+              <p className="px-3 py-2 text-sm text-neutral-500">
+                Loading files...
+              </p>
+            )}
+
+            {!isLoading && files.length === 0 && (
+              <p className="px-3 py-2 text-sm text-neutral-500">
+                No files yet — create one to get started.
+              </p>
+            )}
+
             {files.map(
               (file) => {
                 const editors =
@@ -127,16 +209,25 @@ const Explorer = ({
                   );
 
                 return (
-                  <button
+                  <div
                     key={
                       file.id
                     }
+                    role="button"
+                    tabIndex={0}
                     onClick={() =>
                       onFileOpen?.(
                         file
                       )
                     }
+                    onDoubleClick={() =>
+                      handleRenameFile(file)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onFileOpen?.(file);
+                    }}
                     className="
+                      group
                       w-full
                       rounded-2xl
                       px-4 py-2.5
@@ -147,6 +238,7 @@ const Explorer = ({
                       hover:border-neutral-900
                       transition-all duration-300 ease-out
                       text-left
+                      cursor-pointer
                     "
                   >
                     <div className="flex items-center justify-between">
@@ -173,40 +265,50 @@ const Explorer = ({
                         </div>
                       </div>
 
-                      {/* Editors */}
-                      <div className="flex -space-x-2">
-                        {editors.map(
-                          (
-                            editor
-                          ) => (
-                            <div
-                              key={
-                                editor.socketId
-                              }
-                              className="
-                                w-8 h-8
-                                rounded-full
-                                border-[2px]
-                                border-[#090909]
-                                flex items-center justify-center
-                                text-white
-                                text-xs font-semibold
-                              "
-                              style={{
-                                background:
-                                  editor.color,
-                              }}
-                              title={
-                                editor.username
-                              }
-                            >
-                              {editor.username?.[0]?.toUpperCase()}
-                            </div>
-                          )
-                        )}
+                      {/* Editors + Delete */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-2">
+                          {editors.map(
+                            (
+                              editor
+                            ) => (
+                              <div
+                                key={
+                                  editor.socketId
+                                }
+                                className="
+                                  w-8 h-8
+                                  rounded-full
+                                  border-[2px]
+                                  border-[#090909]
+                                  flex items-center justify-center
+                                  text-white
+                                  text-xs font-semibold
+                                "
+                                style={{
+                                  background:
+                                    editor.color,
+                                }}
+                                title={
+                                  editor.username
+                                }
+                              >
+                                {editor.username?.[0]?.toUpperCase()}
+                              </div>
+                            )
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => handleDeleteFile(e, file)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition"
+                          title="Delete file"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               }
             )}

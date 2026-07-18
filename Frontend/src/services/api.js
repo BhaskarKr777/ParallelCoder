@@ -49,3 +49,21 @@ export const workspaceApi = {
       body: JSON.stringify(payload),
     }),
 };
+
+export const filesApi = {
+  list: (workspaceId) => request(`/workspaces/${workspaceId}/files`),
+
+  create: (workspaceId, payload) =>
+    request(`/workspaces/${workspaceId}/files`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  update: (fileId, payload) =>
+    request(`/files/${fileId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  remove: (fileId) => request(`/files/${fileId}`, { method: "DELETE" }),
+};

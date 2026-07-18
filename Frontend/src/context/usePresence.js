@@ -3,16 +3,20 @@ import socket from "../services/socket";
 import usePresenceStore from "../store/presenceStore";
 
 export const usePresence =
-  () => {
+  (workspaceId) => {
     const {
       removeUser,
       setUserEditing,
       setCurrentUser,
+      setWorkspaceId,
       setUsers,
     } =
       usePresenceStore();
 
     useEffect(() => {
+      if (!workspaceId)
+        return;
+
       /*
         Shared colors
       */
@@ -57,14 +61,17 @@ export const usePresence =
         user
       );
 
+      setWorkspaceId(
+        workspaceId
+      );
+
       /*
         Join workspace
       */
       socket.emit(
         "join-workspace",
         {
-          workspaceId:
-            "parallel-workspace",
+          workspaceId,
 
           user,
         }
@@ -134,7 +141,7 @@ export const usePresence =
           socket.id
         );
       };
-    }, []);
+    }, [workspaceId]);
 
     return null;
   };

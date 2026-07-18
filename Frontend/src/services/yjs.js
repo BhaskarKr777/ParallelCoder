@@ -6,7 +6,8 @@ const rooms =
   new Map();
 
 export const getYjsRoom = (
-  roomId
+  roomId,
+  initialContent
 ) => {
   /*
     Existing room
@@ -63,15 +64,36 @@ export const getYjsRoom = (
     cursor: null,
   });
 
+  const text =
+    ydoc.getText(
+      "monaco"
+    );
+
+  /*
+    Seed brand-new rooms
+    from saved DB content
+  */
+  provider.once(
+    "sync",
+    (isSynced) => {
+      if (
+        isSynced &&
+        text.length === 0 &&
+        initialContent
+      ) {
+        text.insert(
+          0,
+          initialContent
+        );
+      }
+    }
+  );
+
   const room = {
     ydoc,
     provider,
     awareness,
-
-    text:
-      ydoc.getText(
-        "monaco"
-      ),
+    text,
   };
 
   rooms.set(

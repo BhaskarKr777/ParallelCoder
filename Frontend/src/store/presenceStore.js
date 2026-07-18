@@ -14,6 +14,12 @@ const usePresenceStore =
       null,
 
     /*
+      Active workspace room
+    */
+    workspaceId:
+      null,
+
+    /*
       Local identity
     */
     setCurrentUser:
@@ -21,6 +27,12 @@ const usePresenceStore =
         set({
           currentUser:
             user,
+        }),
+
+    setWorkspaceId:
+      (workspaceId) =>
+        set({
+          workspaceId,
         }),
 
     /*

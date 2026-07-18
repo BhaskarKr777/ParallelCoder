@@ -46,3 +46,17 @@ export const listWorkspacesForUser = async (userId) => {
 
   return memberships.map(workspaceSummary);
 };
+
+export const assertMembership = async (userId, workspaceId) => {
+  const member = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+  });
+
+  if (!member) {
+    const error = new Error("You don't have access to this workspace");
+    error.status = 403;
+    throw error;
+  }
+
+  return member;
+};

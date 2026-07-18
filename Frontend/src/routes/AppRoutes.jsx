@@ -18,11 +18,8 @@ const AppRoutes = () => {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/editor" element={<Editor />} />
+          <Route path="/editor/:workspaceId" element={<Editor />} />
         </Route>
-
-        {/* Future Dynamic Workspace Route */}
-        {/* <Route path="/workspace/:workspaceId" element={<Editor />} /> */}
       </Routes>
     </BrowserRouter>
   );

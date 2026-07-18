@@ -1,3 +1,4 @@
+import * as monaco from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import { getYjsRoom } from "../services/yjs";
 import { filesApi } from "../services/api";

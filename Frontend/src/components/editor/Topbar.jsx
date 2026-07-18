@@ -1,15 +1,22 @@
 import {
   Search,
   Play,
+  Loader2,
   Bell,
   ChevronDown,
 } from "lucide-react";
 
 import usePresenceStore from "../../store/presenceStore";
+import useRunStore from "../../store/runStore";
 
-const Topbar = () => {
+const Topbar = ({ onRun, canRun }) => {
   const { users } =
     usePresenceStore();
+
+  const isRunning =
+    useRunStore(
+      (state) => state.isRunning
+    );
 
   return (
     <header className="h-[72px] px-7 border-b border-neutral-900 bg-[#050505] flex items-center justify-between">
@@ -131,6 +138,8 @@ const Topbar = () => {
 
         {/* Run */}
         <button
+          onClick={onRun}
+          disabled={!canRun || isRunning}
           className="
             h-12
             px-5
@@ -141,10 +150,17 @@ const Topbar = () => {
             flex items-center gap-2
             hover:scale-[1.02]
             transition-all
+            disabled:opacity-40
+            disabled:hover:scale-100
+            disabled:cursor-not-allowed
           "
         >
-          <Play size={16} />
-          Run
+          {isRunning ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Play size={16} />
+          )}
+          {isRunning ? "Running..." : "Run"}
         </button>
 
         {/* Notifications */}

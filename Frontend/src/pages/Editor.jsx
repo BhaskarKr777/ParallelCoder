@@ -10,7 +10,9 @@ import Topbar from "../components/editor/Topbar";
 
 import { useChat } from "../context/useChat";
 import { usePresence } from "../context/usePresence";
+import { useRunner } from "../context/useRunner";
 import { filesApi } from "../services/api";
+import { getRoomText } from "../services/yjs";
 
 import socket from "../services/socket";
 
@@ -19,6 +21,7 @@ const Editor = () => {
 
   usePresence(workspaceId);
   useChat();
+  useRunner();
 
   const [project, setProject] = useState(null);
   const [files, setFiles] = useState([]);
@@ -128,6 +131,22 @@ const Editor = () => {
     );
   }, [activeTab, workspaceId]);
 
+  const handleRun = () => {
+    if (!activeTab || !workspaceId) return;
+
+    const content =
+      getRoomText(activeTab.id) ??
+      activeTab.content ??
+      "";
+
+    socket.emit("run:start", {
+      workspaceId,
+      fileId: activeTab.id,
+      language: activeTab.language || "javascript",
+      content,
+    });
+  };
+
   return (
     <div className="h-screen bg-black text-white overflow-hidden">
       {/* OUTER FRAME */}
@@ -145,7 +164,10 @@ const Editor = () => {
           "
         >
           {/* TOPBAR */}
-          <Topbar />
+          <Topbar
+            onRun={handleRun}
+            canRun={!!activeTab}
+          />
 
           {/* MAIN */}
           <div className="flex flex-1 overflow-hidden p-3 gap-4 bg-[#050505]">

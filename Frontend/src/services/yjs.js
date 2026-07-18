@@ -114,3 +114,16 @@ export const getYjsRoom = (
 
   return room;
 };
+
+/*
+  The live (possibly unsaved) content of an already-open file, for
+  things like Run that need what's actually in the editor right now
+  rather than whatever was last autosaved.
+*/
+export const getRoomText = (
+  roomId
+) =>
+  rooms.get(roomId)
+    ?.text
+    ?.toString() ??
+  null;

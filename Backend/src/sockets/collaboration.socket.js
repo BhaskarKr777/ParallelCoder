@@ -4,11 +4,20 @@ import { parse as parseCookie } from "cookie";
 import { env } from "../config/env.js";
 import { getUserById } from "../services/auth.service.js";
 import { assertMembership } from "../services/workspace.service.js";
+import { runCode, isRunnableLanguage } from "../services/runner.service.js";
 
 /* --------------------------------
    Presence State
 -------------------------------- */
 const activeUsers = new Map();
+
+/*
+  Global cap on simultaneously running sandboxed containers,
+  independent of per-socket limits - protects the host regardless of
+  how many different users/workspaces are running code at once.
+*/
+const MAX_CONCURRENT_RUNS = 4;
+let activeRunCount = 0;
 
 /*
   Reject the handshake unless the connecting socket carries a valid
@@ -120,6 +129,63 @@ export const registerCollaborationHandlers = (io) => {
           (u) => u.workspaceId === user.workspaceId
         )
       );
+    });
+
+    /*
+      Run code (sandboxed - see runner.service.js)
+    */
+    socket.on("run:start", async ({ workspaceId, fileId, language, content }) => {
+      if (!socket.data.workspaces.has(workspaceId)) {
+        socket.emit("run:error", { message: "Not a member of this workspace" });
+        return;
+      }
+
+      if (socket.data.running) {
+        socket.emit("run:error", { message: "A run is already in progress for this session" });
+        return;
+      }
+
+      if (!isRunnableLanguage(language)) {
+        socket.emit("run:error", { message: `Running ${language || "this language"} isn't supported yet` });
+        return;
+      }
+
+      if (activeRunCount >= MAX_CONCURRENT_RUNS) {
+        socket.emit("run:error", { message: "Server is busy running other code, try again shortly" });
+        return;
+      }
+
+      const runId = `${socket.id}-${Date.now()}`;
+      socket.data.running = true;
+      activeRunCount += 1;
+
+      io.to(workspaceId).emit("run:start", {
+        runId,
+        fileId,
+        initiatedBy: currentUser().username,
+      });
+
+      try {
+        const result = await runCode({
+          language,
+          content,
+          onStdout: (chunk) => io.to(workspaceId).emit("run:stdout", { runId, chunk }),
+          onStderr: (chunk) => io.to(workspaceId).emit("run:stderr", { runId, chunk }),
+        });
+
+        io.to(workspaceId).emit("run:exit", { runId, ...result });
+      } catch (err) {
+        io.to(workspaceId).emit("run:exit", {
+          runId,
+          exitCode: null,
+          timedOut: false,
+          truncated: false,
+          error: err.message,
+        });
+      } finally {
+        socket.data.running = false;
+        activeRunCount -= 1;
+      }
     });
 
     /*

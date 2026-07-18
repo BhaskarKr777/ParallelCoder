@@ -137,4 +137,26 @@ describe("socket.io auth", () => {
     ownerClient.close();
     intruderClient.close();
   });
+
+  it("rejects run:start from a socket that isn't a workspace member", async () => {
+    const { agent: ownerAgent } = await registerAndGetToken("runowner");
+    const { token: outsiderToken } = await registerAndGetToken("runoutsider");
+
+    const wsRes = await ownerAgent.post("/api/workspaces").send({ name: "Run Test WS" });
+    const workspaceId = wsRes.body.workspace.id;
+
+    const outsiderClient = connectClient(outsiderToken);
+    await waitFor(outsiderClient, "connect");
+    outsiderClient.emit("run:start", {
+      workspaceId,
+      fileId: "does-not-matter",
+      language: "javascript",
+      content: "console.log('should never run')",
+    });
+
+    const err = await waitFor(outsiderClient, "run:error");
+    expect(err.message).toMatch(/not a member/i);
+
+    outsiderClient.close();
+  });
 });

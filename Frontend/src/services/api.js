@@ -1,4 +1,11 @@
-const API_BASE_URL = "http://localhost:3000/api";
+/*
+  Relative on purpose: the backend serves the built frontend from
+  the same origin in production, and the Vite dev proxy forwards
+  /api to the backend in dev (see vite.config.js). A hardcoded
+  http://localhost:3000 here would only ever work on a developer's
+  own machine.
+*/
+const API_BASE_URL = "/api";
 
 const request = async (path, options = {}) => {
   const res = await fetch(`${API_BASE_URL}${path}`, {

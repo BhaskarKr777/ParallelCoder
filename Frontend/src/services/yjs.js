@@ -2,6 +2,17 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import usePresenceStore from "../store/presenceStore";
 
+/*
+  The Yjs websocket server is its own process/port even in
+  production (see docker-compose.yml), not something the Vite dev
+  proxy or same-origin serving can cover, so it's configured at
+  build time instead of hardcoded.
+*/
+const YJS_URL =
+  import.meta.env
+    .VITE_YJS_URL ||
+  "ws://localhost:1234";
+
 const rooms =
   new Map();
 
@@ -32,7 +43,7 @@ export const getYjsRoom = (
 
   const provider =
     new WebsocketProvider(
-      "ws://localhost:1234",
+      YJS_URL,
       roomId,
       ydoc
     );

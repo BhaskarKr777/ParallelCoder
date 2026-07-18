@@ -5,12 +5,21 @@ import {
   useState,
 } from "react";
 
-import Editor from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
 import {
   FileCode2,
 } from "lucide-react";
 
 import { bindEditorToFile } from "../../editor/editorManager";
+
+/*
+  @monaco-editor/react fetches Monaco from a public CDN
+  (jsdelivr) by default. monaco-editor is already a local
+  dependency, so point the loader at it instead — otherwise the
+  editor can't load at all without internet access, and a
+  reasonably strict script-src CSP in production blocks it outright.
+*/
+loader.config({ monaco });
 
 const MonacoEditor = ({
   activeTab,

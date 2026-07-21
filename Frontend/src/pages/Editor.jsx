@@ -14,6 +14,10 @@ import { useRunner } from "../context/useRunner";
 import { filesApi } from "../services/api";
 import { getRoomText } from "../services/yjs";
 
+import useAuthStore from "../store/authStore";
+import useWorkspaceStore from "../store/workspaceStore";
+import usePreviewStore from "../store/previewStore";
+
 import socket from "../services/socket";
 
 const Editor = () => {
@@ -22,6 +26,12 @@ const Editor = () => {
   usePresence(workspaceId);
   useChat();
   useRunner();
+
+  const currentUser = useAuthStore((state) => state.user);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const fetchWorkspace = useWorkspaceStore((state) => state.fetchWorkspace);
+  const role = currentWorkspace?.id === workspaceId ? currentWorkspace.role : null;
+  const isViewer = role === "VIEWER";
 
   const [project, setProject] = useState(null);
   const [files, setFiles] = useState([]);
@@ -49,6 +59,11 @@ const Editor = () => {
       })
       .finally(() => setIsLoadingFiles(false));
   }, [workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    fetchWorkspace(workspaceId);
+  }, [workspaceId, fetchWorkspace]);
 
   const openFile = (file) => {
     const exists =
@@ -132,17 +147,28 @@ const Editor = () => {
   }, [activeTab, workspaceId]);
 
   const handleRun = () => {
-    if (!activeTab || !workspaceId) return;
+    if (!activeTab || !workspaceId || isViewer) return;
 
     const content =
       getRoomText(activeTab.id) ??
       activeTab.content ??
       "";
 
+    const language = activeTab.language || "javascript";
+
+    // HTML has no stdout/exit code - render it client-side instead of
+    // routing it through the sandboxed container runner.
+    if (language === "html") {
+      usePreviewStore.getState().showPreview(activeTab.name, content);
+      return;
+    }
+
+    usePreviewStore.getState().closePreview();
+
     socket.emit("run:start", {
       workspaceId,
       fileId: activeTab.id,
-      language: activeTab.language || "javascript",
+      language,
       content,
     });
   };
@@ -166,7 +192,7 @@ const Editor = () => {
           {/* TOPBAR */}
           <Topbar
             onRun={handleRun}
-            canRun={!!activeTab}
+            canRun={!!activeTab && !isViewer}
           />
 
           {/* MAIN */}
@@ -194,6 +220,7 @@ const Editor = () => {
                   projectName={project?.name}
                   files={files}
                   isLoading={isLoadingFiles}
+                  canEdit={!isViewer}
                   onFileOpen={openFile}
                   onFileCreated={handleFileCreated}
                   onFileDeleted={handleFileDeleted}
@@ -230,10 +257,11 @@ const Editor = () => {
                   activeTab={
                     activeTab
                   }
+                  readOnly={isViewer}
                 />
               </div>
 
-              <BottomPanel />
+              <BottomPanel language={activeTab?.language} />
             </div>
 
             {/* RIGHT PANEL */}
@@ -251,7 +279,11 @@ const Editor = () => {
                   flex-col
                 "
               >
-                <CollaborationPanel />
+                <CollaborationPanel
+                  workspaceId={workspaceId}
+                  currentUserId={currentUser?.id}
+                  currentUserRole={role}
+                />
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ import {
   loginLocalUser,
   issueTokens,
   verifyRefreshToken,
+  revokeAllSessions,
   getUserById,
 } from "../services/auth.service.js";
 
@@ -72,6 +73,17 @@ export const logout = (_req, res) => {
   res.status(200).json({ success: true });
 };
 
+export const logoutAll = async (req, res, next) => {
+  try {
+    await revokeAllSessions(req.user.id);
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const me = (req, res) => {
   res.status(200).json({ success: true, user: req.user });
 };
@@ -84,10 +96,10 @@ export const refresh = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
 
-    const userId = verifyRefreshToken(token);
-    const user = await getUserById(userId);
+    const payload = verifyRefreshToken(token);
+    const user = await getUserById(payload.sub);
 
-    if (!user) {
+    if (!user || payload.tokenVersion !== user.tokenVersion) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
 

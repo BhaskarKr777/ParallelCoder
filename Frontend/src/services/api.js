@@ -41,6 +41,8 @@ export const authApi = {
 
   logout: () => request("/auth/logout", { method: "POST" }),
 
+  logoutAll: () => request("/auth/logout-all", { method: "POST" }),
+
   me: () => request("/auth/me"),
 
   googleUrl: `${API_BASE_URL}/auth/google`,
@@ -55,6 +57,25 @@ export const workspaceApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  get: (workspaceId) => request(`/workspaces/${workspaceId}`),
+
+  members: (workspaceId) => request(`/workspaces/${workspaceId}/members`),
+
+  inviteMember: (workspaceId, payload) =>
+    request(`/workspaces/${workspaceId}/members`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateMemberRole: (workspaceId, memberId, role) =>
+    request(`/workspaces/${workspaceId}/members/${memberId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+
+  removeMember: (workspaceId, memberId) =>
+    request(`/workspaces/${workspaceId}/members/${memberId}`, { method: "DELETE" }),
 };
 
 export const filesApi = {

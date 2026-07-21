@@ -7,6 +7,7 @@ import {
   register,
   login,
   logout,
+  logoutAll,
   me,
   refresh,
   oauthCallback,
@@ -24,6 +25,7 @@ const authLimiter = rateLimit({
 router.post("/register", authLimiter, register);
 router.post("/login", authLimiter, login);
 router.post("/logout", logout);
+router.post("/logout-all", requireAuth, logoutAll);
 router.post("/refresh", refresh);
 router.get("/me", requireAuth, me);
 

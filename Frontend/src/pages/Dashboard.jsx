@@ -18,6 +18,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const logoutAll = useAuthStore((state) => state.logoutAll);
   const { workspaces, isLoading, fetchWorkspaces } = useWorkspaceStore();
 
   useEffect(() => {
@@ -26,6 +27,14 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await logout();
+    navigate("/login");
+  };
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm("Log out of all devices? Every other signed-in session will be ended.")) {
+      return;
+    }
+    await logoutAll();
     navigate("/login");
   };
 
@@ -69,13 +78,22 @@ const Dashboard = () => {
         </div>
 
         {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 text-zinc-500 hover:text-white transition"
-        >
-          <LogOut size={20} />
-          Logout
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 text-zinc-500 hover:text-white transition"
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
+
+          <button
+            onClick={handleLogoutAll}
+            className="text-xs text-zinc-600 hover:text-red-400 transition pl-9"
+          >
+            Log out of all devices
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

@@ -6,8 +6,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import pinoHttp from "pino-http";
 
 import { env } from "./src/config/env.js";
+import { logger } from "./src/config/logger.js";
 import "./src/config/passport.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import workspaceRoutes from "./src/routes/workspace.routes.js";
@@ -15,6 +17,17 @@ import fileRoutes from "./src/routes/file.routes.js";
 import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 const app = express();
+
+// One structured log line per request/response, with a per-request
+// child logger at req.log for anything handlers need to add context
+// to. Mounted first so every request gets logged, including ones
+// rejected by helmet/CORS/rate-limiting below.
+app.use(
+  pinoHttp({
+    logger,
+    redact: ["req.headers.cookie", "req.headers.authorization"],
+  })
+);
 
 /*
   Default CSP's connect-src 'self' would block the Yjs websocket,

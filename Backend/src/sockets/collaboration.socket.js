@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { parse as parseCookie } from "cookie";
 
 import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 import { getUserById } from "../services/auth.service.js";
 import { assertMembership } from "../services/workspace.service.js";
 import { runCode, isRunnableLanguage } from "../services/runner.service.js";
@@ -45,12 +46,13 @@ const authenticateSocket = async (socket, next) => {
 
     const user = await getUserById(payload.sub);
 
-    if (!user) {
+    if (!user || payload.tokenVersion !== user.tokenVersion) {
       return next(new Error("Unauthorized"));
     }
 
     socket.data.user = user;
     socket.data.workspaces = new Set();
+    socket.data.roles = new Map();
 
     next();
   } catch {
@@ -75,20 +77,23 @@ export const registerCollaborationHandlers = (io) => {
       });
     });
 
-    console.log(`🟢 User Connected: ${socket.id}`);
+    logger.info({ socketId: socket.id }, "User connected");
 
     /*
       Join Workspace
     */
     socket.on("join-workspace", async ({ workspaceId, color }) => {
+      let member;
+
       try {
-        await assertMembership(currentUser().id, workspaceId);
+        member = await assertMembership(currentUser().id, workspaceId);
       } catch {
         return;
       }
 
       socket.join(workspaceId);
       socket.data.workspaces.add(workspaceId);
+      socket.data.roles.set(workspaceId, member.role);
 
       activeUsers.set(socket.id, {
         ...currentUser(),
@@ -108,7 +113,7 @@ export const registerCollaborationHandlers = (io) => {
         )
       );
 
-      console.log(`👨‍💻 ${currentUser().username} joined ${workspaceId}`);
+      logger.info({ username: currentUser().username, workspaceId }, "User joined workspace");
     });
 
     /*
@@ -150,6 +155,11 @@ export const registerCollaborationHandlers = (io) => {
         return;
       }
 
+      if (socket.data.roles.get(workspaceId) === "VIEWER") {
+        socket.emit("run:error", { message: "Viewers can't run code in this workspace" });
+        return;
+      }
+
       if (activeRunCount >= MAX_CONCURRENT_RUNS) {
         socket.emit("run:error", { message: "Server is busy running other code, try again shortly" });
         return;
@@ -175,6 +185,8 @@ export const registerCollaborationHandlers = (io) => {
 
         io.to(workspaceId).emit("run:exit", { runId, ...result });
       } catch (err) {
+        logger.error({ err, runId, workspaceId, language }, "Sandboxed run failed to start");
+
         io.to(workspaceId).emit("run:exit", {
           runId,
           exitCode: null,
@@ -204,7 +216,7 @@ export const registerCollaborationHandlers = (io) => {
           )
         );
 
-        console.log(`🔴 User Disconnected: ${socket.id}`);
+        logger.info({ socketId: socket.id }, "User disconnected");
       }
     });
   });

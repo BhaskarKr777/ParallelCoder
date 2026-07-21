@@ -18,7 +18,11 @@ import { runCode, isRunnableLanguage } from "../src/services/runner.service.js";
 describe("runner.service", () => {
   it("only knows about supported languages", () => {
     expect(isRunnableLanguage("javascript")).toBe(true);
-    expect(isRunnableLanguage("python")).toBe(false);
+    expect(isRunnableLanguage("python")).toBe(true);
+    expect(isRunnableLanguage("c")).toBe(true);
+    expect(isRunnableLanguage("cpp")).toBe(true);
+    expect(isRunnableLanguage("java")).toBe(true);
+    expect(isRunnableLanguage("ruby")).toBe(false);
     expect(isRunnableLanguage(undefined)).toBe(false);
   });
 
@@ -38,6 +42,65 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(2);
     expect(result.timedOut).toBe(false);
   });
+
+  it("runs Python from stdin", async () => {
+    const stdout = [];
+
+    const result = await runCode({
+      language: "python",
+      content: "print('hello from python')",
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("hello from python");
+    expect(result.exitCode).toBe(0);
+  }, 20000);
+
+  it("compiles and runs C in the exec-enabled scratch tmpfs", async () => {
+    const stdout = [];
+    const stderr = [];
+
+    const result = await runCode({
+      language: "c",
+      content: `#include <stdio.h>\nint main(){ printf("hello from c\\n"); return 0; }`,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: (chunk) => stderr.push(chunk),
+    });
+
+    expect(stdout.join("")).toContain("hello from c");
+    expect(stderr.join("")).toBe("");
+    expect(result.exitCode).toBe(0);
+  }, 20000);
+
+  it("compiles and runs C++ in the exec-enabled scratch tmpfs", async () => {
+    const stdout = [];
+
+    const result = await runCode({
+      language: "cpp",
+      content: `#include <iostream>\nint main(){ std::cout << "hello from cpp" << std::endl; return 0; }`,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("hello from cpp");
+    expect(result.exitCode).toBe(0);
+  }, 20000);
+
+  it("compiles and runs a Java submission (must define `class Main`)", async () => {
+    const stdout = [];
+
+    const result = await runCode({
+      language: "java",
+      content:
+        'public class Main { public static void main(String[] args) { System.out.println("hello from java"); } }',
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("hello from java");
+    expect(result.exitCode).toBe(0);
+  }, 20000);
 
   it("has no network access from inside the sandbox", async () => {
     const stdout = [];

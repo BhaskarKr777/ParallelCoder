@@ -34,6 +34,12 @@ const useAuthStore = create((set) => ({
     socket.disconnect();
     set({ user: null, isAuthenticated: false, isLoading: false });
   },
+
+  logoutAll: async () => {
+    await authApi.logoutAll();
+    socket.disconnect();
+    set({ user: null, isAuthenticated: false, isLoading: false });
+  },
 }));
 
 export default useAuthStore;

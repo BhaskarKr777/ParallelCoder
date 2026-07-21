@@ -17,6 +17,13 @@ const LANGUAGE_BY_EXTENSION = {
   ts: "typescript",
   tsx: "typescript",
   py: "python",
+  c: "c",
+  h: "c",
+  cpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  hpp: "cpp",
+  java: "java",
   json: "json",
   css: "css",
   html: "html",
@@ -67,6 +74,7 @@ const Explorer = ({
   projectName,
   files = [],
   isLoading = false,
+  canEdit = true,
   onFileOpen,
   onFileCreated,
   onFileDeleted,
@@ -85,6 +93,8 @@ const Explorer = ({
     };
 
   const handleCreateFile = async () => {
+    if (!canEdit) return;
+
     const name = window.prompt("File name (e.g. index.js)");
     if (!name?.trim()) return;
 
@@ -102,6 +112,7 @@ const Explorer = ({
   const handleDeleteFile = async (e, file) => {
     e.stopPropagation();
 
+    if (!canEdit) return;
     if (!window.confirm(`Delete ${file.name}?`)) return;
 
     await filesApi.remove(file.id);
@@ -109,6 +120,8 @@ const Explorer = ({
   };
 
   const handleRenameFile = async (file) => {
+    if (!canEdit) return;
+
     const name = window.prompt("Rename file", file.name);
     if (!name?.trim() || name === file.name) return;
 
@@ -178,13 +191,15 @@ const Explorer = ({
               </span>
             </div>
 
-            <button
-              onClick={handleCreateFile}
-              title="New file"
-              className="p-1 rounded-lg text-neutral-500 hover:text-white hover:bg-[#101010] transition"
-            >
-              <Plus size={16} />
-            </button>
+            {canEdit && (
+              <button
+                onClick={handleCreateFile}
+                title="New file"
+                className="p-1 rounded-lg text-neutral-500 hover:text-white hover:bg-[#101010] transition"
+              >
+                <Plus size={16} />
+              </button>
+            )}
           </div>
 
           {/* File Tree */}
@@ -299,13 +314,15 @@ const Explorer = ({
                           )}
                         </div>
 
-                        <button
-                          onClick={(e) => handleDeleteFile(e, file)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition"
-                          title="Delete file"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={(e) => handleDeleteFile(e, file)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition"
+                            title="Delete file"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

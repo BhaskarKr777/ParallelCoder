@@ -9,7 +9,7 @@ import { randomUUID } from "crypto";
   - --network none:      no outbound access at all (no exfiltration,
                           no hitting internal services/metadata APIs)
   - --read-only + a tiny
-    noexec tmpfs:         nothing the code writes can persist or be
+    noexec tmpfs:         nothing written to /tmp can persist or be
                           executed as a second-stage payload
   - --cap-drop ALL +
     no-new-privileges:    no privilege escalation inside the container
@@ -19,15 +19,65 @@ import { randomUUID } from "crypto";
   - code goes over stdin, never as a CLI arg or into a shell string:
                           nothing to inject
 
-  Only Node is supported for v1 (LANGUAGE_IMAGES has one entry) -
-  intentionally not a generic "pick any image" surface.
+  Compiled languages (c/cpp/java) are the one deliberate exception to
+  the noexec rule above: a compiler has to write a binary/class file
+  somewhere and then execute it, so those languages additionally get
+  a second tmpfs at /scratch mounted *without* noexec. This is exactly
+  what every sandboxed judge does - the risk it adds is bounded by
+  everything else above still applying (no network, no root, capped
+  memory/cpus/pids), and running C/C++ at all already implies the
+  submitted code executes as native machine code either way.
 */
 
+/*
+  One image with every toolchain baked in (see runner.dockerfile at
+  the repo root), instead of pulling a separate upstream image per
+  language - build it yourself with:
+
+    docker build -f runner.dockerfile -t parallel-coder-runner:latest .
+
+  before starting the API. All languages below share it; only the
+  command run inside the container differs.
+*/
+const RUNNER_IMAGE = "parallel-coder-runner:latest";
+
 const LANGUAGE_IMAGES = {
-  javascript: { image: "node:20-alpine", command: ["node"] },
+  javascript: {
+    image: RUNNER_IMAGE,
+    command: ["node"],
+  },
+  python: {
+    image: RUNNER_IMAGE,
+    // `-` tells the interpreter to read the script from stdin.
+    command: ["python3", "-"],
+  },
+  c: {
+    image: RUNNER_IMAGE,
+    // `-x c -` reads the source from stdin; only the compiled
+    // binary touches disk, in the exec-enabled /scratch tmpfs.
+    command: ["sh", "-c", "gcc -O2 -pipe -x c -o /scratch/a.out - && /scratch/a.out"],
+    needsScratch: true,
+  },
+  cpp: {
+    image: RUNNER_IMAGE,
+    command: ["sh", "-c", "g++ -O2 -pipe -x c++ -o /scratch/a.out - && /scratch/a.out"],
+    needsScratch: true,
+  },
+  java: {
+    image: RUNNER_IMAGE,
+    // javac needs a real .java file on disk, and requires the public
+    // class name to match the filename - so submissions must define
+    // `class Main`, same constraint most single-file judges impose.
+    command: [
+      "sh",
+      "-c",
+      "cat > /scratch/Main.java && javac -d /scratch /scratch/Main.java && java -cp /scratch Main",
+    ],
+    needsScratch: true,
+  },
 };
 
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 15_000;
 const MAX_OUTPUT_BYTES = 64 * 1024;
 const KILL_GRACE_MS = 2000;
 
@@ -52,16 +102,20 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     "--network",
     "none",
     "--memory",
-    "128m",
+    "256m",
     "--memory-swap",
-    "128m",
+    "256m",
     "--cpus",
-    "0.5",
+    "1",
     "--pids-limit",
-    "64",
+    "128",
     "--read-only",
     "--tmpfs",
     "/tmp:rw,noexec,nosuid,size=16m",
+    // Docker Desktop mounts tmpfs noexec by default unless `exec` is
+    // passed explicitly (unlike plain Linux dockerd) - without this,
+    // the compiled binary below fails with "Permission denied".
+    ...(target.needsScratch ? ["--tmpfs", "/scratch:rw,nosuid,exec,size=96m"] : []),
     "--cap-drop",
     "ALL",
     "--security-opt",

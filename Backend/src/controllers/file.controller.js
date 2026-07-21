@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { assertMembership } from "../services/workspace.service.js";
+import { assertMembership, assertCanEdit } from "../services/workspace.service.js";
 import {
   listFiles,
   createFile,
@@ -32,7 +32,8 @@ export const list = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    await assertMembership(req.user.id, req.params.workspaceId);
+    const member = await assertMembership(req.user.id, req.params.workspaceId);
+    assertCanEdit(member);
     const data = createSchema.parse(req.body);
     const file = await createFile(req.params.workspaceId, data);
     res.status(201).json({ success: true, file });
@@ -47,7 +48,8 @@ export const create = async (req, res, next) => {
 export const update = async (req, res, next) => {
   try {
     const workspaceId = await getFileWorkspaceId(req.params.fileId);
-    await assertMembership(req.user.id, workspaceId);
+    const member = await assertMembership(req.user.id, workspaceId);
+    assertCanEdit(member);
     const data = updateSchema.parse(req.body);
     const file = await updateFile(req.params.fileId, data);
     res.status(200).json({ success: true, file });
@@ -62,7 +64,8 @@ export const update = async (req, res, next) => {
 export const remove = async (req, res, next) => {
   try {
     const workspaceId = await getFileWorkspaceId(req.params.fileId);
-    await assertMembership(req.user.id, workspaceId);
+    const member = await assertMembership(req.user.id, workspaceId);
+    assertCanEdit(member);
     await deleteFile(req.params.fileId);
     res.status(200).json({ success: true });
   } catch (error) {

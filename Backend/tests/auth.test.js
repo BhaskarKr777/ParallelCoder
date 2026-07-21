@@ -85,4 +85,44 @@ describe("auth", () => {
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe(email);
   });
+
+  it("refresh issues a new session for a valid refresh cookie", async () => {
+    const email = uniqueEmail();
+    const agent = request.agent(app);
+
+    await agent
+      .post("/api/auth/register")
+      .send({ email, username: "Tester", password: "TestPass123!" })
+      .expect(201);
+
+    const res = await agent.post("/api/auth/refresh");
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe(email);
+  });
+
+  it("logout-all invalidates every previously issued token, not just the current cookie", async () => {
+    const email = uniqueEmail();
+    const agent = request.agent(app);
+
+    const registerRes = await agent
+      .post("/api/auth/register")
+      .send({ email, username: "Tester", password: "TestPass123!" })
+      .expect(201);
+
+    const oldToken = registerRes.headers["set-cookie"]
+      .find((c) => c.startsWith("accessToken="))
+      .split(";")[0]
+      .split("=")[1];
+
+    // the still-unexpired token works before revocation
+    const before = await request(app).get("/api/auth/me").set("Cookie", `accessToken=${oldToken}`);
+    expect(before.status).toBe(200);
+
+    await agent.post("/api/auth/logout-all").expect(200);
+
+    // same token, never expired, but the account's tokenVersion moved on
+    const after = await request(app).get("/api/auth/me").set("Cookie", `accessToken=${oldToken}`);
+    expect(after.status).toBe(401);
+  });
 });

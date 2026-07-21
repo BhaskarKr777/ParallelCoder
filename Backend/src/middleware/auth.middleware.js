@@ -14,7 +14,7 @@ export const requireAuth = async (req, res, next) => {
     const payload = jwt.verify(token, env.jwtAccessSecret);
     const user = await getUserById(payload.sub);
 
-    if (!user) {
+    if (!user || payload.tokenVersion !== user.tokenVersion) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
 

@@ -28,12 +28,17 @@ model User {
   passwordHash String?
   provider     AuthProvider @default(LOCAL)
   providerId   String?
+  // Bumped to invalidate every outstanding access/refresh JWT at
+  // once (see auth.service.js) - "log out everywhere" for a
+  // stateless token scheme without keeping a revocation list.
+  tokenVersion Int          @default(0)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   ownedWorkspaces   Workspace[]        @relation("WorkspaceOwner")
   workspaceMembers  WorkspaceMember[]
   chatMessages      ChatMessage[]
+  createdInvites    WorkspaceInvite[]
 
   @@unique([provider, providerId])
 }
@@ -48,6 +53,7 @@ model Workspace {
   members      WorkspaceMember[]
   projects     Project[]
   chatMessages ChatMessage[]
+  invites      WorkspaceInvite[]
 }
 
 model WorkspaceMember {
@@ -92,4 +98,21 @@ model ChatMessage {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+// Groundwork for shareable join-by-link invites. Not wired up to any
+// route yet (v1 only supports inviting an existing user by email,
+// see workspace.service.js) - this just reserves the shape so a
+// join-link flow can be added later without another migration.
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  workspaceId String
+  token       String        @unique @default(cuid())
+  role        WorkspaceRole @default(EDITOR)
+  createdById String
+  expiresAt   DateTime?
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
 }

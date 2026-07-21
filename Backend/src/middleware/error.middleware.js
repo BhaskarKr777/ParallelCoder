@@ -6,7 +6,7 @@ export const errorHandler = (err, req, res, _next) => {
   const status = err.status || 500;
 
   if (status === 500) {
-    console.error(err);
+    req.log.error({ err }, "Unhandled error");
   }
 
   res.status(status).json({

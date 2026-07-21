@@ -1,77 +1,41 @@
-import http from "http";
-import jwt from "jsonwebtoken";
-import { parse as parseCookie } from "cookie";
-import { WebSocketServer } from "ws";
+import { createYjsServer } from "./yjsApp.js";
+import { logger } from "../src/config/logger.js";
+import prisma from "../src/config/prisma.js";
 
-import {
-  setupWSConnection,
-} from "y-websocket/bin/utils";
-
-import { env } from "../src/config/env.js";
-import { getFileWorkspaceId } from "../src/services/file.service.js";
-import { assertMembership } from "../src/services/workspace.service.js";
-
-const server = http.createServer();
-
-/*
-  Reject the upgrade before the socket is accepted unless the
-  connecting user holds a valid session and is a member of the
-  workspace that owns the requested file (room name = fileId).
-  Without this, anyone who knows/guesses a fileId can read and
-  write that file's live content over the raw websocket, bypassing
-  every REST-layer membership check.
-*/
-const verifyClient = async (info, callback) => {
-  try {
-    const fileId = info.req.url
-      .split("?")[0]
-      .replace(/^\//, "");
-
-    if (!fileId) {
-      return callback(false, 400, "Missing room");
-    }
-
-    const cookies = parseCookie(
-      info.req.headers.cookie || ""
-    );
-
-    const token = cookies.accessToken;
-
-    if (!token) {
-      return callback(false, 401, "Unauthorized");
-    }
-
-    const payload = jwt.verify(
-      token,
-      env.jwtAccessSecret
-    );
-
-    const workspaceId = await getFileWorkspaceId(fileId);
-    await assertMembership(payload.sub, workspaceId);
-
-    return callback(true);
-  } catch {
-    return callback(false, 401, "Unauthorized");
-  }
-};
-
-const wss = new WebSocketServer({
-  server,
-  verifyClient,
-});
-
-wss.on(
-  "connection",
-  (conn, req) => {
-    setupWSConnection(conn, req);
-  }
-);
+const { server, wss } = createYjsServer();
 
 server.listen(1234, () => {
-  console.log(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧠 Yjs Websocket Running
-🌐 ws://localhost:1234
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
+  logger.info({ port: 1234 }, "Yjs websocket server listening");
 });
+
+/*
+  Without this, a redeploy/container restart (SIGTERM from the
+  orchestrator) drops in-flight sync connections outright instead of
+  draining them.
+*/
+let shuttingDown = false;
+
+const shutdown = (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  logger.info({ signal }, "Shutting down gracefully");
+
+  const forceExit = setTimeout(() => {
+    logger.error("Graceful shutdown timed out, forcing exit");
+    process.exit(1);
+  }, 10_000);
+  forceExit.unref();
+
+  wss.close(() => {
+    server.close(async () => {
+      await prisma.$disconnect();
+      clearTimeout(forceExit);
+      logger.info("Shutdown complete");
+      process.exit(0);
+    });
+  });
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

@@ -8,6 +8,10 @@ dist/
 build/
 Backend/Public/
 
+# local Yjs document persistence (see websocket/persistence-env.js)
+Backend/.yjs-data/
+Backend/.yjs-data-test/
+
 # environment variables
 .env
 .env.local

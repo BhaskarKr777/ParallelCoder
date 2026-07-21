@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
 
 import { env } from "./env.js";
+import { logger } from "./logger.js";
 import { findOrCreateOAuthUser } from "../services/auth.service.js";
 
 export const oauthAvailability = {
@@ -36,7 +37,7 @@ if (oauthAvailability.google) {
     )
   );
 } else {
-  console.warn("⚠️  Google OAuth not configured — GOOGLE_CLIENT_ID/SECRET missing from .env");
+  logger.warn("Google OAuth not configured — GOOGLE_CLIENT_ID/SECRET missing from .env");
 }
 
 if (oauthAvailability.github) {
@@ -67,7 +68,7 @@ if (oauthAvailability.github) {
     )
   );
 } else {
-  console.warn("⚠️  GitHub OAuth not configured — GITHUB_CLIENT_ID/SECRET missing from .env");
+  logger.warn("GitHub OAuth not configured — GITHUB_CLIENT_ID/SECRET missing from .env");
 }
 
 export default passport;

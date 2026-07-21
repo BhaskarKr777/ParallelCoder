@@ -1,10 +1,13 @@
-import React from "react";
-import { Mic } from "lucide-react";
+import React, { useState } from "react";
+import { Mic, UserPlus } from "lucide-react";
 
 import UsersList from "./UsersList";
 import ChatPanel from "./ChatPanel";
+import MembersModal from "./MembersModal";
 
-const CollaborationPanel = () => {
+const CollaborationPanel = ({ workspaceId, currentUserId, currentUserRole }) => {
+  const [showMembers, setShowMembers] = useState(false);
+
   return (
     <aside
       className="
@@ -26,13 +29,31 @@ const CollaborationPanel = () => {
           </p>
         </div>
 
-        <button className="h-10 w-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center">
-          <Mic
-            size={18}
-            className="text-white"
-          />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowMembers(true)}
+            title="Manage members"
+            className="h-10 w-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center"
+          >
+            <UserPlus size={18} className="text-white" />
+          </button>
+
+          <button className="h-10 w-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition flex items-center justify-center">
+            <Mic
+              size={18}
+              className="text-white"
+            />
+          </button>
+        </div>
       </div>
+
+      <MembersModal
+        isOpen={showMembers}
+        onClose={() => setShowMembers(false)}
+        workspaceId={workspaceId}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+      />
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">

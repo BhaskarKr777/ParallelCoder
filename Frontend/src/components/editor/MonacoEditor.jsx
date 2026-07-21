@@ -23,6 +23,7 @@ loader.config({ monaco });
 
 const MonacoEditor = ({
   activeTab,
+  readOnly = false,
 }) => {
   const editorRef =
     useRef(null);
@@ -234,6 +235,8 @@ const MonacoEditor = ({
           handleMount
         }
         options={{
+          readOnly,
+
           fontSize: 15,
 
           fontFamily:

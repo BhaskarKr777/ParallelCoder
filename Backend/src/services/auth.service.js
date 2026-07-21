@@ -12,16 +12,21 @@ const publicUser = (user) => ({
   username: user.username,
   avatar: user.avatar,
   provider: user.provider,
+  tokenVersion: user.tokenVersion,
 });
 
 export const issueTokens = (user) => {
-  const accessToken = jwt.sign({ sub: user.id }, env.jwtAccessSecret, {
-    expiresIn: "15m",
-  });
+  const accessToken = jwt.sign(
+    { sub: user.id, tokenVersion: user.tokenVersion },
+    env.jwtAccessSecret,
+    { expiresIn: "15m" }
+  );
 
-  const refreshToken = jwt.sign({ sub: user.id }, env.jwtRefreshSecret, {
-    expiresIn: "7d",
-  });
+  const refreshToken = jwt.sign(
+    { sub: user.id, tokenVersion: user.tokenVersion },
+    env.jwtRefreshSecret,
+    { expiresIn: "7d" }
+  );
 
   return { accessToken, refreshToken };
 };
@@ -115,5 +120,20 @@ export const getUserById = async (id) => {
 
 export const verifyRefreshToken = (token) => {
   const payload = jwt.verify(token, env.jwtRefreshSecret);
-  return payload.sub;
+  return payload;
+};
+
+/*
+  Access/refresh tokens are stateless JWTs with no revocation list,
+  so there's no way to invalidate one before it expires - except by
+  changing the value every valid token is checked against. Bumping
+  this makes every previously issued token fail the tokenVersion
+  check in auth.middleware.js / collaboration.socket.js on its next
+  use, which is what "log out everywhere" actually means here.
+*/
+export const revokeAllSessions = async (userId) => {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
 };

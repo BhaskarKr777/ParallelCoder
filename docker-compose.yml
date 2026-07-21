@@ -32,6 +32,18 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  # Builds the one image every sandboxed run container is spawned
+  # from (see runner.dockerfile + runner.service.js) - node/python/gcc/
+  # jdk baked into a single image instead of pulling one per
+  # language. This container never does anything itself; `api`
+  # depends on the build finishing, not on it staying up.
+  runner-image:
+    build:
+      context: .
+      dockerfile: runner.dockerfile
+    image: parallel-coder-runner:latest
+    command: ["true"]
+
   migrate:
     build:
       context: .
@@ -72,6 +84,8 @@ services:
         condition: service_completed_successfully
       docker-proxy:
         condition: service_started
+      runner-image:
+        condition: service_completed_successfully
 
   yjs:
     build:
@@ -80,7 +94,11 @@ services:
       args:
         VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
     command: ["node", "websocket/yjs-server.js"]
-    environment: *backend_env
+    environment:
+      <<: *backend_env
+      YJS_PERSISTENCE_DIR: /data/yjs
+    volumes:
+      - yjs_data:/data/yjs
     ports:
       - "${YJS_PORT:-1234}:1234"
     depends_on:
@@ -89,3 +107,4 @@ services:
 
 volumes:
   postgres_data:
+  yjs_data:

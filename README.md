@@ -1,240 +1,136 @@
 # Parallel Coder
 
-Parallel Coder is a real-time collaborative coding platform where multiple users can write, edit, and collaborate on code simultaneously in shared coding rooms. The platform is designed to make remote collaboration faster, smoother, and more interactive for developers, students, and teams.
+Parallel Coder is a real-time collaborative coding workspace. Teams can create workspaces, edit files together, chat, manage member roles, and run supported code in an isolated Docker sandbox.
 
----
+## Features
 
-## About the Project
+- Email/password, Google, and GitHub authentication
+- Shared workspaces with owner, admin, editor, and viewer roles
+- Live collaborative editing with Yjs and WebSockets
+- Workspace chat and online presence
+- File explorer and Monaco editor
+- One-time invitation codes, valid for seven days
+- Sandboxed execution for JavaScript, Python, C, C++, and Java
+- PostgreSQL persistence with Prisma
 
-Parallel Coder aims to create a seamless coding environment where developers can collaborate in real time from different locations, similar to working together on the same machine.
+## Tech stack
 
-The project focuses on:
-- Real-time collaboration
-- Live code synchronization
-- Shared coding workspaces
-- Scalable architecture
-- Modern frontend experience
-- Cloud-ready deployment architecture
+- Frontend: React, Vite, Tailwind CSS, Zustand, Monaco Editor
+- Backend: Node.js, Express, Socket.IO, Yjs
+- Database: PostgreSQL and Prisma
+- Runtime: Docker Compose, Docker socket proxy, and a restricted runner image
 
-This project is currently under active development, and many new features and improvements are planned.
+## Prerequisites
 
----
+- Node.js 20+
+- npm
+- Docker Desktop (or Docker Engine) for Docker Compose and code execution
+- PostgreSQL, unless using the included Docker Compose setup
 
-## Current Features
+## Local development
 
-- Real-time collaborative code editing
-- Multi-user coding rooms
-- Instant code synchronization
-- Responsive frontend interface
-- Frontend and backend separation
-- Socket-based communication
-- Modern project structure
+1. Install the root development dependency:
 
----
+   ```bash
+   npm install
+   ```
 
-## Tech Stack
+2. Install application dependencies:
 
-### Frontend
-- React.js
-- Vite
-- CSS
+   ```bash
+   npm install --prefix Backend
+   npm install --prefix Frontend
+   ```
 
-### Backend
-- Node.js
-- Express.js
-- Socket.IO
+3. Create `Backend/.env` with your database URL and secrets. At minimum:
 
-### Deployment (In Progress)
-- Docker
-- AWS
+   ```env
+   DATABASE_URL="postgresql://parallel_coder:parallel_coder@localhost:5433/parallel_coder?schema=public"
+   JWT_ACCESS_SECRET=replace_with_a_long_random_value
+   JWT_REFRESH_SECRET=replace_with_a_different_long_random_value
+   FRONTEND_URL=http://localhost:5173
+   ```
 
----
+4. Start PostgreSQL with Docker Compose, then apply migrations:
 
-## Project Structure
+   ```bash
+   docker compose up -d postgres
+   cd Backend
+   npx prisma migrate deploy
+   cd ..
+   ```
 
-```bash
-ParallelCoder/
-│
-├── Backend/
-│   ├── Public/
-│   ├── package.json
-│   └── ...
-│
-├── Frontend/
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── ...
-│
-└── dockerfile
-```
+5. Start the backend, Yjs server, and frontend together:
 
----
+   ```bash
+   npm run dev
+   ```
 
-## Installation Guide
+The frontend runs at `http://localhost:5173`. Vite forwards API requests to the backend during development.
 
-### Clone the Repository
+## Docker deployment
+
+Docker Compose starts PostgreSQL, migrations, the API/frontend application, the Yjs server, a Docker socket proxy, and the sandbox runner image.
 
 ```bash
-git clone https://github.com/BhaskarKr777/ParallelCoder.git
+docker compose up --build
 ```
 
-### Navigate to the Project Directory
+The API is available on `http://localhost:3000` by default. Configure ports, database credentials, OAuth settings, and JWT secrets through environment variables before production deployment.
 
-```bash
-cd ParallelCoder
-```
+The code runner needs access to Docker through the included socket proxy. Do not remove its network, capability, read-only filesystem, memory, CPU, PID, or user restrictions.
 
----
+## Invitation codes
 
-## Frontend Setup
+1. Open a workspace and select **Members**.
+2. Select the role for the recipient and choose **Create code**.
+3. Copy the generated code and send it to one person.
+4. The recipient signs in, pastes the code into the Dashboard invitation-code field, and selects **Join**.
 
-```bash
-cd Frontend
-npm install
-npm run dev
-```
+Codes expire after seven days and can only be redeemed once. Owners and admins can create codes.
 
-Frontend will run on:
+## Database migrations
 
-```bash
-http://localhost:5173
-```
-
----
-
-## Backend Setup
-
-Open another terminal and run:
+Run migrations whenever pulling changes that alter the Prisma schema:
 
 ```bash
 cd Backend
-npm install
-npm start
+npx prisma migrate deploy
 ```
 
-The backend server will run on the configured port.
+The invitation-code feature requires the `20260815000000_complete_workspace_invites` migration.
 
----
+## Testing
 
-## Docker Support
+Backend tests require PostgreSQL. Runner tests also require Docker to be running and the runner image to be available.
 
-Docker integration is currently being developed to simplify deployment and improve scalability.
+```bash
+docker build -f runner.dockerfile -t parallel-coder-runner:latest .
+npm test --prefix Backend
+npm run build --prefix Frontend
+```
 
-Planned Docker support includes:
-- Separate frontend and backend containers
-- Docker Compose configuration
-- Production-ready builds
-- Containerized deployment workflow
+## Continuous integration
 
----
+GitHub Actions runs backend tests against PostgreSQL and builds/lints the frontend. Because the runner tests use Docker, the CI workflow must build the runner image before backend tests:
 
-## AWS Deployment
+```yaml
+- run: docker build -f runner.dockerfile -t parallel-coder-runner:latest .
+  working-directory: .
+```
 
-AWS deployment support is currently in progress.
+## Project structure
 
-Future deployment goals include:
-- Scalable cloud infrastructure
-- EC2 deployment
-- Container orchestration
-- Automated deployment pipelines
-
----
-
-## Planned Features
-
-The project is continuously evolving. Upcoming features may include:
-
-- Authentication system
-- Chat system
-- Voice communication
-- Video collaboration
-- AI-powered coding assistance
-- Multi-language support
-- Code execution support
-- Collaborative debugging tools
-- Cursor tracking
-- Room management system
-- Theme customization
-- File management system
-- CI/CD integration
-
----
+```text
+ParallelCoder/
+├── Backend/        # Express API, Prisma schema, tests, and Yjs server
+├── Frontend/       # React/Vite application
+├── docker-compose.yml
+├── dockerfile      # API and production frontend image
+├── runner.dockerfile
+└── .github/        # CI workflow
+```
 
 ## Contributing
 
-Contributions are welcome and appreciated.
-
-Whether you are a beginner or an experienced developer, you can contribute to improving Parallel Coder.
-
-### Steps to Contribute
-
-1. Fork the repository
-
-2. Clone your fork
-
-```bash
-git clone https://github.com/your-username/ParallelCoder.git
-```
-
-3. Create a new branch
-
-```bash
-git checkout -b feature-name
-```
-
-4. Make your changes
-
-5. Commit your changes
-
-```bash
-git commit -m "Added new feature"
-```
-
-6. Push your branch
-
-```bash
-git push origin feature-name
-```
-
-7. Open a Pull Request
-
----
-
-## Goals for Contributors
-
-This project provides contributors an opportunity to work with:
-- Real-time systems
-- WebSocket communication
-- Frontend and backend integration
-- Docker and containerization
-- AWS deployment workflows
-- Scalable system architecture
-- Open-source collaboration
-
-Contributors can help by:
-- Improving the frontend
-- Optimizing backend performance
-- Fixing bugs
-- Adding new features
-- Improving documentation
-- Enhancing scalability and deployment
-
----
-
-## Project Status
-
-Parallel Coder is actively being developed and improved continuously.
-
-The current focus areas include:
-- Docker integration
-- AWS deployment
-- Frontend enhancements
-- Feature expansion
-- Performance optimization
-
----
-
-## Repository
-
-https://github.com/BhaskarKr777/ParallelCoder
+Create a feature branch, make and test your changes, then open a pull request. Do not commit secrets, local `.env` files, or generated database data.

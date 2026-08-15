@@ -49,6 +49,9 @@ jobs:
 
       - run: npx prisma migrate deploy
 
+      - run: docker build -f runner.dockerfile -t parallel-coder-runner:latest .
+        working-directory: .
+
       - run: npm test
 
   frontend:

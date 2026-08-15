@@ -18,6 +18,9 @@ const waitForSync = (provider) =>
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("Yjs LevelDB persistence", () => {
+  // CI does not load .env.test, while local tests do. This must match
+  // persistence-env.js so cleanup always targets the directory actually used.
+  const persistenceDir = process.env.YJS_PERSISTENCE_DIR || "./.yjs-data";
   let server;
   let wss;
   let port;
@@ -59,7 +62,7 @@ describe("Yjs LevelDB persistence", () => {
     // release that handle before deleting the directory, or Windows
     // refuses to unlink files still held open (EBUSY).
     await getPersistence()?.provider?.destroy();
-    await rm(process.env.YJS_PERSISTENCE_DIR, { recursive: true, force: true });
+    await rm(persistenceDir, { recursive: true, force: true });
   });
 
   it("survives the server destroying the in-memory doc after everyone disconnects", async () => {

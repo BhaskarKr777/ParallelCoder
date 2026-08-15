@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, UserPlus, Trash2, LogOut } from "lucide-react";
+import { X, UserPlus, Trash2, LogOut, Copy, KeyRound } from "lucide-react";
 
 import { workspaceApi } from "../../services/api";
 
@@ -17,6 +17,9 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
   const [inviteRole, setInviteRole] = useState("EDITOR");
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [isCreatingCode, setIsCreatingCode] = useState(false);
+  const [codeMessage, setCodeMessage] = useState("");
 
   const [busyMemberId, setBusyMemberId] = useState(null);
   const [actionError, setActionError] = useState("");
@@ -45,8 +48,35 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
   const handleClose = () => {
     setInviteEmail("");
     setInviteError("");
+    setInviteCode("");
+    setCodeMessage("");
     setActionError("");
     onClose();
+  };
+
+  const handleCreateInviteCode = async () => {
+    setInviteError("");
+    setCodeMessage("");
+    setIsCreatingCode(true);
+
+    try {
+      const { invite } = await workspaceApi.createInvite(workspaceId, inviteRole);
+      setInviteCode(invite.code);
+      setCodeMessage(`One-time ${invite.role.toLowerCase()} code. It expires in 7 days.`);
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setIsCreatingCode(false);
+    }
+  };
+
+  const copyInviteCode = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setCodeMessage("Code copied. Send it only to the person you want to invite.");
+    } catch {
+      setCodeMessage("Copy the code manually.");
+    }
   };
 
   const handleInvite = async (e) => {
@@ -115,6 +145,7 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
         <p className="text-zinc-500 mt-2">Manage who has access to this workspace.</p>
 
         {isManager && (
+          <>
           <form onSubmit={handleInvite} className="mt-8 flex items-end gap-3">
             <div className="flex-1">
               <label className="text-sm text-zinc-400 mb-2 block">Invite by email</label>
@@ -149,6 +180,40 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
               {isInviting ? "Inviting..." : "Invite"}
             </button>
           </form>
+
+          <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-zinc-200">Invite with a one-time code</p>
+                <p className="text-xs text-zinc-500 mt-1">Uses the selected role above and expires in 7 days.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateInviteCode}
+                disabled={isCreatingCode}
+                className="h-10 px-4 rounded-xl border border-zinc-700 text-sm text-zinc-200 hover:bg-zinc-800 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                <KeyRound size={15} />
+                {isCreatingCode ? "Creating..." : "Create code"}
+              </button>
+            </div>
+
+            {inviteCode && (
+              <div className="mt-3 flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-xl bg-black px-3 py-2 text-sm text-white">{inviteCode}</code>
+                <button
+                  type="button"
+                  onClick={copyInviteCode}
+                  title="Copy invitation code"
+                  className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition"
+                >
+                  <Copy size={16} />
+                </button>
+              </div>
+            )}
+            {codeMessage && <p className="text-xs text-zinc-400 mt-2">{codeMessage}</p>}
+          </div>
+          </>
         )}
 
         {inviteError && <p className="text-sm text-red-400 mt-3">{inviteError}</p>}

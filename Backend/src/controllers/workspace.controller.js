@@ -6,6 +6,8 @@ import {
   getWorkspaceForUser,
   listMembers,
   inviteMemberByEmail,
+  createInviteCode,
+  acceptInviteCode,
   updateMemberRole,
   removeMember,
   assertMembership,
@@ -25,6 +27,14 @@ const inviteSchema = z.object({
 
 const roleSchema = z.object({
   role: z.enum(["ADMIN", "EDITOR", "VIEWER"]),
+});
+
+const inviteCodeSchema = z.object({
+  role: z.enum(["ADMIN", "EDITOR", "VIEWER"]).default("EDITOR"),
+});
+
+const acceptInviteSchema = z.object({
+  code: z.string().min(12).max(128),
 });
 
 export const create = async (req, res, next) => {
@@ -76,6 +86,33 @@ export const inviteMember = async (req, res, next) => {
     const member = await inviteMemberByEmail(req.params.workspaceId, email, role);
 
     res.status(201).json({ success: true, member });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, message: error.issues[0].message });
+    }
+    next(error);
+  }
+};
+
+export const createInvite = async (req, res, next) => {
+  try {
+    await assertManager(req.user.id, req.params.workspaceId);
+    const { role } = inviteCodeSchema.parse(req.body);
+    const invite = await createInviteCode(req.params.workspaceId, req.user.id, role);
+    res.status(201).json({ success: true, invite });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, message: error.issues[0].message });
+    }
+    next(error);
+  }
+};
+
+export const acceptInvite = async (req, res, next) => {
+  try {
+    const { code } = acceptInviteSchema.parse(req.body);
+    const membership = await acceptInviteCode(req.user.id, code);
+    res.status(201).json({ success: true, membership });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ success: false, message: error.issues[0].message });

@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { randomBytes } from "node:crypto";
 
 const MANAGER_ROLES = ["OWNER", "ADMIN"];
 const INVITABLE_ROLES = ["ADMIN", "EDITOR", "VIEWER"];
@@ -165,6 +166,72 @@ export const inviteMemberByEmail = async (workspaceId, email, role) => {
 
   return memberSummary(member);
 };
+
+export const createInviteCode = async (workspaceId, createdById, role) => {
+  if (!INVITABLE_ROLES.includes(role)) {
+    const error = new Error("Invalid role");
+    error.status = 400;
+    throw error;
+  }
+
+  // 18 random bytes are URL-safe and practically impossible to guess.
+  const token = randomBytes(18).toString("base64url");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const invite = await prisma.workspaceInvite.create({
+    data: { workspaceId, createdById, role, token, expiresAt },
+  });
+
+  return { code: invite.token, role: invite.role, expiresAt: invite.expiresAt };
+};
+
+export const acceptInviteCode = async (userId, token) =>
+  prisma.$transaction(async (tx) => {
+    const invite = await tx.workspaceInvite.findUnique({ where: { token } });
+
+    if (!invite) {
+      const error = new Error("Invitation code is invalid");
+      error.status = 404;
+      throw error;
+    }
+
+    if (invite.usedAt) {
+      const error = new Error("This invitation code has already been used");
+      error.status = 409;
+      throw error;
+    }
+
+    if (invite.expiresAt && invite.expiresAt <= new Date()) {
+      const error = new Error("This invitation code has expired");
+      error.status = 410;
+      throw error;
+    }
+
+    const existing = await tx.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: invite.workspaceId, userId } },
+    });
+    if (existing) {
+      const error = new Error("You are already a member of this workspace");
+      error.status = 409;
+      throw error;
+    }
+
+    const member = await tx.workspaceMember.create({
+      data: { workspaceId: invite.workspaceId, userId, role: invite.role },
+    });
+
+    // The conditional update prevents two concurrent requests from redeeming one code.
+    const claimed = await tx.workspaceInvite.updateMany({
+      where: { id: invite.id, usedAt: null },
+      data: { usedAt: new Date(), acceptedById: userId },
+    });
+    if (claimed.count !== 1) {
+      const error = new Error("This invitation code has already been used");
+      error.status = 409;
+      throw error;
+    }
+
+    return { workspaceId: invite.workspaceId, memberId: member.id, role: member.role };
+  });
 
 export const updateMemberRole = async (workspaceId, memberId, role) => {
   if (!INVITABLE_ROLES.includes(role)) {

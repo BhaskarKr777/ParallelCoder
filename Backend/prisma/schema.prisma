@@ -39,6 +39,7 @@ model User {
   workspaceMembers  WorkspaceMember[]
   chatMessages      ChatMessage[]
   createdInvites    WorkspaceInvite[]
+  acceptedInvites   WorkspaceInvite[] @relation("InviteAcceptedBy")
 
   @@unique([provider, providerId])
 }
@@ -100,10 +101,7 @@ model ChatMessage {
   sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
 
-// Groundwork for shareable join-by-link invites. Not wired up to any
-// route yet (v1 only supports inviting an existing user by email,
-// see workspace.service.js) - this just reserves the shape so a
-// join-link flow can be added later without another migration.
+// A one-time invite code. A recipient must be signed in before accepting it.
 model WorkspaceInvite {
   id          String        @id @default(cuid())
   workspaceId String
@@ -111,8 +109,11 @@ model WorkspaceInvite {
   role        WorkspaceRole @default(EDITOR)
   createdById String
   expiresAt   DateTime?
+  usedAt      DateTime?
+  acceptedById String?
   createdAt   DateTime      @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  acceptedBy User?    @relation("InviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
 }

@@ -68,6 +68,18 @@ export const workspaceApi = {
       body: JSON.stringify(payload),
     }),
 
+  createInvite: (workspaceId, role) =>
+    request(`/workspaces/${workspaceId}/invites`, {
+      method: "POST",
+      body: JSON.stringify({ role }),
+    }),
+
+  acceptInvite: (code) =>
+    request("/workspaces/invites/accept", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
   updateMemberRole: (workspaceId, memberId, role) =>
     request(`/workspaces/${workspaceId}/members/${memberId}`, {
       method: "PATCH",

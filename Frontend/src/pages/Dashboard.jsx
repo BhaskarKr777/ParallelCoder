@@ -7,14 +7,19 @@ import {
   Settings,
   LogOut,
   Plus,
+  KeyRound,
 } from "lucide-react";
 
 import CreateWorkspaceModal from "../components/dashboard/CreateWorkspaceModal";
 import useAuthStore from "../store/authStore";
 import useWorkspaceStore from "../store/workspaceStore";
+import { workspaceApi } from "../services/api";
 
 const Dashboard = () => {
   const [openModal, setOpenModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -36,6 +41,21 @@ const Dashboard = () => {
     }
     await logoutAll();
     navigate("/login");
+  };
+
+  const handleJoinWorkspace = async (event) => {
+    event.preventDefault();
+    setJoinError("");
+    setIsJoining(true);
+    try {
+      const { membership } = await workspaceApi.acceptInvite(inviteCode.trim());
+      await fetchWorkspaces();
+      navigate(`/editor/${membership.workspaceId}`);
+    } catch (error) {
+      setJoinError(error.message);
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   return (
@@ -135,13 +155,28 @@ const Dashboard = () => {
                 Create Workspace
               </button>
 
-              {/* Join Room */}
-              <button className="border border-zinc-700 bg-zinc-900/40 backdrop-blur-xl px-6 py-3 rounded-2xl text-zinc-300 hover:border-zinc-500 transition">
-                Join Room
-              </button>
+              <form onSubmit={handleJoinWorkspace} className="flex gap-2">
+                <label className="sr-only" htmlFor="invite-code">Invitation code</label>
+                <input
+                  id="invite-code"
+                  required
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value)}
+                  placeholder="Invitation code"
+                  className="w-40 sm:w-52 border border-zinc-700 bg-zinc-900/40 px-4 py-3 rounded-2xl text-sm text-white outline-none focus:border-zinc-500"
+                />
+                <button
+                  disabled={isJoining}
+                  className="border border-zinc-700 bg-zinc-900/40 backdrop-blur-xl px-4 py-3 rounded-2xl text-zinc-300 hover:border-zinc-500 transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  <KeyRound size={16} />
+                  {isJoining ? "Joining..." : "Join"}
+                </button>
+              </form>
 
             </div>
           </div>
+          {joinError && <p className="mt-3 text-sm text-red-400">{joinError}</p>}
 
           {/* Dashboard Grid */}
           <div className="grid lg:grid-cols-3 gap-6 mt-12">

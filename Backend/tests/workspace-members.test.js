@@ -93,10 +93,33 @@ describe("workspace member management", () => {
     expect(roleChange.status).toBe(403);
   });
 
+  it("creates a one-time invitation code that another signed-in user can redeem", async () => {
+    const created = await owner.agent
+      .post(`/api/workspaces/${workspaceId}/invites`)
+      .send({ role: "VIEWER" });
+
+    expect(created.status).toBe(201);
+    expect(created.body.invite.code).toHaveLength(24);
+    expect(created.body.invite.role).toBe("VIEWER");
+
+    const accepted = await outsider.agent
+      .post("/api/workspaces/invites/accept")
+      .send({ code: created.body.invite.code });
+
+    expect(accepted.status).toBe(201);
+    expect(accepted.body.membership.workspaceId).toBe(workspaceId);
+    expect(accepted.body.membership.role).toBe("VIEWER");
+
+    const reused = await owner.agent
+      .post("/api/workspaces/invites/accept")
+      .send({ code: created.body.invite.code });
+    expect(reused.status).toBe(409);
+  });
+
   it("lets a member list workspace members once invited", async () => {
     const list = await editor.agent.get(`/api/workspaces/${workspaceId}/members`);
     expect(list.status).toBe(200);
-    expect(list.body.members.map((m) => m.role).sort()).toEqual(["EDITOR", "OWNER", "VIEWER"]);
+    expect(list.body.members.map((m) => m.role).sort()).toEqual(["EDITOR", "OWNER", "VIEWER", "VIEWER"]);
   });
 
   it("lets the owner change a member's role", async () => {

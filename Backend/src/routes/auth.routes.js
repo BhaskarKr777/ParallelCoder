@@ -2,6 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 
 import passport, { oauthAvailability } from "../config/passport.js";
+import { env } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import {
   register,

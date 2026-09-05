@@ -85,5 +85,13 @@ const shutdown = (signal) => {
   });
 };
 
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught Exception");
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.error({ reason }, "Unhandled Rejection");
+});
+
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));

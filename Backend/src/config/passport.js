@@ -22,12 +22,18 @@ if (oauthAvailability.google) {
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
+          const email =
+            profile.emails?.[0]?.value || `google_${profile.id}@no-email.google.com`;
+          const username =
+            profile.displayName || profile.name?.givenName || "Google User";
+          const avatar = profile.photos?.[0]?.value;
+
           const user = await findOrCreateOAuthUser({
             provider: "GOOGLE",
             providerId: profile.id,
-            email: profile.emails?.[0]?.value,
-            username: profile.displayName || profile.name?.givenName || "Google User",
-            avatar: profile.photos?.[0]?.value,
+            email,
+            username,
+            avatar,
           });
 
           done(null, user);
@@ -52,14 +58,18 @@ if (oauthAvailability.github) {
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
+          const email =
+            profile.emails?.[0]?.value ||
+            `${profile.username || profile.id}@users.noreply.github.com`;
+          const username = profile.username || profile.displayName || "GitHub User";
+          const avatar = profile.photos?.[0]?.value;
+
           const user = await findOrCreateOAuthUser({
             provider: "GITHUB",
             providerId: profile.id,
-            email:
-              profile.emails?.[0]?.value ||
-              `${profile.username}@users.noreply.github.com`,
-            username: profile.username,
-            avatar: profile.photos?.[0]?.value,
+            email,
+            username,
+            avatar,
           });
 
           done(null, user);

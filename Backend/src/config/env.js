@@ -52,7 +52,11 @@ validateProductionSecrets(databaseUrl, jwtAccessSecret, jwtRefreshSecret);
 
 const cleanUrl = (urlStr) => {
   if (!urlStr) return "";
-  let clean = urlStr.trim().replace(/\/+$/, "");
+  let clean = urlStr
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[\r\n\t]/g, "")
+    .replace(/\/+$/, "");
   if (isProduction && clean.startsWith("http://")) {
     clean = clean.replace("http://", "https://");
   }

@@ -43,10 +43,14 @@ const requireStrategy = (provider) => (req, res, next) => {
 
 const handleOAuthCallback = (provider) => (req, res, next) => {
   passport.authenticate(provider, { session: false }, (err, user, info) => {
+    if (res.headersSent) return;
+
     if (err || !user) {
       logger.error({ err, info, provider }, "OAuth authentication callback failed");
       const msg = err?.message || info?.message || `${provider} authentication failed`;
-      return res.redirect(`${env.frontendUrl}/login?error=${encodeURIComponent(msg)}`);
+      const targetUrl = new URL("/login", env.frontendUrl);
+      targetUrl.searchParams.set("error", msg);
+      return res.redirect(targetUrl.toString());
     }
     req.user = user;
     oauthCallback(req, res);

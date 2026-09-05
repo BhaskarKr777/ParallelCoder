@@ -114,5 +114,6 @@ export const refresh = async (req, res, next) => {
 export const oauthCallback = (req, res) => {
   const tokens = issueTokens(req.user);
   setAuthCookies(res, tokens);
-  res.redirect(`${env.frontendUrl}/dashboard`);
+  const targetUrl = new URL("/dashboard", env.frontendUrl).toString();
+  res.redirect(targetUrl);
 };

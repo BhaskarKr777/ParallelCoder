@@ -1,19 +1,15 @@
 import { describe, it, expect } from "vitest";
-
+import { execSync } from "child_process";
 import { runCode, isRunnableLanguage } from "../src/services/runner.service.js";
 
-/*
-  This hits the real Docker sandbox (same "no mocking" approach as
-  the rest of the suite), so it needs Docker available - true in
-  CI (GitHub-hosted runners ship it) and in local dev here.
-
-  The slow/adversarial properties (10s timeout kill, output
-  truncation, fork-bomb containment, read-only filesystem) were
-  verified manually against this same service and aren't re-run
-  here on every CI run - correct, but a 10s-per-test tax isn't worth
-  paying on every push for properties that only change if the
-  hardening flags in runner.service.js are touched at all.
-*/
+const hasDocker = (() => {
+  try {
+    execSync("docker info", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+})();
 
 describe("runner.service", () => {
   it("only knows about supported languages", () => {
@@ -26,7 +22,7 @@ describe("runner.service", () => {
     expect(isRunnableLanguage(undefined)).toBe(false);
   });
 
-  it("executes code and streams stdout/stderr with the right exit code", async () => {
+  it.skipIf(!hasDocker)("executes code and streams stdout/stderr with the right exit code", async () => {
     const stdout = [];
     const stderr = [];
 
@@ -43,7 +39,7 @@ describe("runner.service", () => {
     expect(result.timedOut).toBe(false);
   });
 
-  it("runs Python from stdin", async () => {
+  it.skipIf(!hasDocker)("runs Python from stdin", async () => {
     const stdout = [];
 
     const result = await runCode({
@@ -57,7 +53,7 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(0);
   }, 20000);
 
-  it("compiles and runs C in the exec-enabled scratch tmpfs", async () => {
+  it.skipIf(!hasDocker)("compiles and runs C in the exec-enabled scratch tmpfs", async () => {
     const stdout = [];
     const stderr = [];
 
@@ -73,7 +69,7 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(0);
   }, 20000);
 
-  it("compiles and runs C++ in the exec-enabled scratch tmpfs", async () => {
+  it.skipIf(!hasDocker)("compiles and runs C++ in the exec-enabled scratch tmpfs", async () => {
     const stdout = [];
 
     const result = await runCode({
@@ -87,7 +83,7 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(0);
   }, 20000);
 
-  it("compiles and runs a Java submission (must define `class Main`)", async () => {
+  it.skipIf(!hasDocker)("compiles and runs a Java submission (must define `class Main`)", async () => {
     const stdout = [];
 
     const result = await runCode({
@@ -102,7 +98,7 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(0);
   }, 20000);
 
-  it("has no network access from inside the sandbox", async () => {
+  it.skipIf(!hasDocker)("has no network access from inside the sandbox", async () => {
     const stdout = [];
 
     const result = await runCode({

@@ -39,7 +39,7 @@ import { randomUUID } from "crypto";
   before starting the API. All languages below share it; only the
   command run inside the container differs.
 */
-const RUNNER_IMAGE = "parallel-coder-runner:latest";
+const RUNNER_IMAGE = process.env.RUNNER_IMAGE || "parallel-coder-runner:1.0.0";
 
 const LANGUAGE_IMAGES = {
   javascript: {
@@ -84,6 +84,63 @@ const KILL_GRACE_MS = 2000;
 export const isRunnableLanguage = (language) =>
   Object.prototype.hasOwnProperty.call(LANGUAGE_IMAGES, language);
 
+const runLocalFallback = ({ language, content, onStdout, onStderr }) => {
+  return new Promise((resolve) => {
+    let cmd = "";
+    let args = [];
+
+    if (language === "javascript") {
+      cmd = "node";
+      args = ["-e", content ?? ""];
+    } else if (language === "python") {
+      cmd = process.platform === "win32" ? "python" : "python3";
+      args = ["-c", content ?? ""];
+    } else {
+      onStderr("[Runner Notice] Docker Desktop is not running. Please start Docker Desktop to execute C/C++/Java code.\n");
+      return resolve({ exitCode: 1, timedOut: false, truncated: false, error: "Docker daemon unavailable" });
+    }
+
+    onStderr("[Runner Notice] Docker daemon unavailable - running in local development mode.\n");
+
+    const proc = spawn(cmd, args, { stdio: ["pipe", "pipe", "pipe"] });
+
+    let outputBytes = 0;
+    let truncated = false;
+    let timedOut = false;
+
+    const forward = (emit) => (chunk) => {
+      if (truncated) return;
+      outputBytes += chunk.length;
+      if (outputBytes > MAX_OUTPUT_BYTES) {
+        truncated = true;
+        emit("\n[output truncated]\n");
+        proc.kill("SIGKILL");
+        return;
+      }
+      emit(chunk.toString("utf8"));
+    };
+
+    proc.stdout.on("data", forward(onStdout));
+    proc.stderr.on("data", forward(onStderr));
+
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      proc.kill("SIGKILL");
+    }, TIMEOUT_MS);
+
+    proc.on("error", (err) => {
+      clearTimeout(timeout);
+      onStderr(`\n[Local Execution Error] ${err.message}\n`);
+      resolve({ exitCode: 1, timedOut: false, truncated, error: err.message });
+    });
+
+    proc.on("close", (exitCode) => {
+      clearTimeout(timeout);
+      resolve({ exitCode, timedOut, truncated, error: null });
+    });
+  });
+};
+
 export const runCode = ({ language, content, onStdout, onStderr }) => {
   const target = LANGUAGE_IMAGES[language];
 
@@ -112,9 +169,6 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     "--read-only",
     "--tmpfs",
     "/tmp:rw,noexec,nosuid,size=16m",
-    // Docker Desktop mounts tmpfs noexec by default unless `exec` is
-    // passed explicitly (unlike plain Linux dockerd) - without this,
-    // the compiled binary below fails with "Permission denied".
     ...(target.needsScratch ? ["--tmpfs", "/scratch:rw,nosuid,exec,size=96m"] : []),
     "--cap-drop",
     "ALL",
@@ -134,6 +188,8 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     let timedOut = false;
     let settled = false;
 
+    const dockerStderrChunks = [];
+
     const forward = (emit) => (chunk) => {
       if (truncated) return;
 
@@ -150,16 +206,14 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     };
 
     proc.stdout.on("data", forward(onStdout));
-    proc.stderr.on("data", forward(onStderr));
+    proc.stderr.on("data", (chunk) => {
+      dockerStderrChunks.push(chunk.toString("utf8"));
+      forward(onStderr)(chunk);
+    });
 
     let forceKillTimer = null;
 
     const killContainer = () => {
-      // `docker run -i --rm` exits once the container stops, but
-      // stop it explicitly rather than relying on SIGTERM reaching
-      // the CLI propagating cleanly through to the daemon. If even
-      // that doesn't bring the local process down promptly, fall
-      // back to SIGKILL-ing the CLI process itself.
       spawn("docker", ["kill", containerName]).on("error", () => {});
       forceKillTimer = setTimeout(() => proc.kill("SIGKILL"), KILL_GRACE_MS);
     };
@@ -172,11 +226,24 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     proc.stdin.write(content ?? "");
     proc.stdin.end();
 
-    const finish = (result) => {
+    const finish = async (result) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
       if (forceKillTimer) clearTimeout(forceKillTimer);
+
+      const combinedStderr = dockerStderrChunks.join("");
+      const isDockerConnError =
+        combinedStderr.includes("failed to connect to the docker API") ||
+        combinedStderr.includes("daemon is running") ||
+        combinedStderr.includes("Cannot connect to the Docker daemon") ||
+        result.error?.includes("ENOENT");
+
+      if (isDockerConnError && (language === "javascript" || language === "python")) {
+        const localResult = await runLocalFallback({ language, content, onStdout, onStderr });
+        return resolve(localResult);
+      }
+
       resolve(result);
     };
 

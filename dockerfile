@@ -1,46 +1,36 @@
-#for frontend
+# for frontend
 
-FROM node:20-alpine as frontend-builder
+FROM node:20.18.0-alpine as frontend-builder
 
-# The Yjs websocket server is its own process/port even in
-# production (see docker-compose.yml), so its URL is baked into the
-# frontend bundle at build time rather than hardcoded.
 ARG VITE_YJS_URL=ws://localhost:1234
 ENV VITE_YJS_URL=$VITE_YJS_URL
 
-COPY ./Frontend /app
-
 WORKDIR /app
 
-RUN npm install
+COPY ./Frontend/package.json ./Frontend/package-lock.json ./
+RUN npm ci
 
+COPY ./Frontend ./
 RUN npm run build
 
-#for backend
+# for backend
 
-FROM node:20-alpine as backend-builder
+FROM node:20.18.0-alpine as backend-builder
 
 WORKDIR /app
 
-# The `docker` CLI (not a daemon - just the client binary) so the
-# api service can spawn sandboxed run containers. It talks to
-# docker-proxy over DOCKER_HOST (see docker-compose.yml), never to a
-# socket mounted into this image directly.
 RUN apk add --no-cache docker-cli
 
-COPY ./Backend /app
+COPY ./Backend/package.json ./Backend/package-lock.json ./
+RUN npm ci
 
-RUN npm install
-
+COPY ./Backend ./
 RUN npx prisma generate
 
 COPY --from=frontend-builder /app/dist /app/Public
 
-# Two processes share this image: the API (server.js, also serves
-# the frontend build above) and the standalone Yjs websocket server
-# (websocket/yjs-server.js). docker-compose.yml runs each as its own
-# service from this same image via `command:` overrides, and runs
-# `npx prisma migrate deploy` as a one-off service before either
-# starts. CMD here is just the default for `docker run` with no
-# override.
-CMD [ "node", "server.js" ]
+RUN chown -R node:node /app
+
+USER node
+
+CMD [ "node", "server.js" ]

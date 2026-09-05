@@ -7,6 +7,8 @@ import { logger } from "./src/config/logger.js";
 import prisma from "./src/config/prisma.js";
 import { registerCollaborationHandlers } from "./src/sockets/collaboration.socket.js";
 
+import { createYjsServer } from "./websocket/yjsApp.js";
+
 /* --------------------------------
    HTTP Server
 -------------------------------- */
@@ -24,6 +26,25 @@ const io = new Server(httpServer, {
 });
 
 registerCollaborationHandlers(io);
+
+/* --------------------------------
+   Single-Port Yjs Attachment
+-------------------------------- */
+const attachYjs = process.env.ATTACH_YJS === "true" || process.env.SINGLE_PORT === "true";
+
+if (attachYjs) {
+  const { wss: yjsWss } = createYjsServer({ noServer: true });
+
+  httpServer.on("upgrade", (req, socket, head) => {
+    if (req.url.startsWith("/socket.io")) return;
+
+    yjsWss.handleUpgrade(req, socket, head, (conn) => {
+      yjsWss.emit("connection", conn, req);
+    });
+  });
+
+  logger.info("Yjs WebSocket handler attached to main HTTP server");
+}
 
 /* --------------------------------
    Start Server

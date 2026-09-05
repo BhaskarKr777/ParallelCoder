@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X, UserPlus, Trash2, LogOut, Copy, KeyRound } from "lucide-react";
 
 import { workspaceApi } from "../../services/api";
@@ -24,7 +24,7 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
   const [busyMemberId, setBusyMemberId] = useState(null);
   const [actionError, setActionError] = useState("");
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     setIsLoading(true);
     setListError("");
 
@@ -36,12 +36,12 @@ const MembersModal = ({ isOpen, onClose, workspaceId, currentUserId, currentUser
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!isOpen || !workspaceId) return;
     loadMembers();
-  }, [isOpen, workspaceId]);
+  }, [isOpen, workspaceId, loadMembers]);
 
   if (!isOpen) return null;
 

@@ -7,16 +7,17 @@ Parallel Coder is a real-time collaborative coding workspace. Teams can create w
 - Email/password, Google, and GitHub authentication
 - Shared workspaces with owner, admin, editor, and viewer roles
 - Live collaborative editing with Yjs and WebSockets
-- Workspace chat and online presence
+- Workspace chat with **PostgreSQL persistence** & online presence
 - File explorer and Monaco editor
 - One-time invitation codes, valid for seven days
-- Sandboxed execution for JavaScript, Python, C, C++, and Java
+- Sandboxed execution for JavaScript, Python, C, C++, and Java with size & rate controls
 - PostgreSQL persistence with Prisma
+- **Production Hardening**: WebSocket origin validation, 512KB frame limits, fail-fast production secret validation, immutable non-root containers, and health check endpoints
 
 ## Tech stack
 
 - Frontend: React, Vite, Tailwind CSS, Zustand, Monaco Editor
-- Backend: Node.js, Express, Socket.IO, Yjs
+- Backend: Node.js, Express, Socket.IO, Yjs, Zod, Pino
 - Database: PostgreSQL and Prisma
 - Runtime: Docker Compose, Docker socket proxy, and a restricted runner image
 
@@ -68,17 +69,17 @@ Parallel Coder is a real-time collaborative coding workspace. Teams can create w
 
 The frontend runs at `http://localhost:5173`. Vite forwards API requests to the backend during development.
 
-## Docker deployment
+## Docker deployment & Production Operations
 
-Docker Compose starts PostgreSQL, migrations, the API/frontend application, the Yjs server, a Docker socket proxy, and the sandbox runner image.
+Docker Compose starts PostgreSQL, migrations, the API/frontend application, the Yjs server, a Docker socket proxy, and the sandbox runner image with container health checks and restart policies.
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-The API is available on `http://localhost:3000` by default. Configure ports, database credentials, OAuth settings, and JWT secrets through environment variables before production deployment.
+The API is available on `http://localhost:3000` by default. Health check endpoints are exposed at `http://localhost:3000/health`.
 
-The code runner needs access to Docker through the included socket proxy. Do not remove its network, capability, read-only filesystem, memory, CPU, PID, or user restrictions.
+For horizontal scaling (Redis adapter & Yjs pub/sub), automated database backups (`pg_dump` S3 sync), Prometheus monitoring, and disaster recovery instructions, see **[PRODUCTION_OPERATIONS.md](PRODUCTION_OPERATIONS.md)**.
 
 ## Invitation codes
 
@@ -98,39 +99,27 @@ cd Backend
 npx prisma migrate deploy
 ```
 
-The invitation-code feature requires the `20260815000000_complete_workspace_invites` migration.
+## Testing & CI
 
-## Testing
-
-Backend tests require PostgreSQL. Runner tests also require Docker to be running and the runner image to be available.
+Backend tests auto-detect Docker daemon availability. Runner integration tests execute when Docker is running and gracefully handle local environments where Docker is stopped.
 
 ```bash
-docker build -f runner.dockerfile -t parallel-coder-runner:latest .
+docker build -f runner.dockerfile -t parallel-coder-runner:1.0.0 .
 npm test --prefix Backend
+npm run lint --prefix Frontend
 npm run build --prefix Frontend
-```
-
-## Continuous integration
-
-GitHub Actions runs backend tests against PostgreSQL and builds/lints the frontend. Because the runner tests use Docker, the CI workflow must build the runner image before backend tests:
-
-```yaml
-- run: docker build -f runner.dockerfile -t parallel-coder-runner:latest .
-  working-directory: .
 ```
 
 ## Project structure
 
 ```text
 ParallelCoder/
-├── Backend/        # Express API, Prisma schema, tests, and Yjs server
-├── Frontend/       # React/Vite application
+├── Backend/                 # Express API, Prisma schema, tests, and Yjs server
+├── Frontend/                # React/Vite application
+├── PRODUCTION_OPERATIONS.md # Scale, backup, and monitoring guide
 ├── docker-compose.yml
-├── dockerfile      # API and production frontend image
+├── dockerfile               # Hardened non-root production image
 ├── runner.dockerfile
-└── .github/        # CI workflow
+└── .github/                 # CI workflow
 ```
 
-## Contributing
-
-Create a feature branch, make and test your changes, then open a pull request. Do not commit secrets, local `.env` files, or generated database data.

@@ -7,10 +7,11 @@
 #
 # runner.service.js execs this image directly via `docker run` - it
 # is never started as a long-running container itself.
-FROM node:20-bookworm-slim
+FROM node:20.18.0-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 \
       build-essential \
       default-jdk-headless \
     && rm -rf /var/lib/apt/lists/*
+

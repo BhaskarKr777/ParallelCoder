@@ -150,7 +150,14 @@ export const usePresence =
           socket.id
         );
       };
-    }, [workspaceId]);
+    }, [
+      workspaceId,
+      removeUser,
+      setCurrentUser,
+      setUserEditing,
+      setUsers,
+      setWorkspaceId,
+    ]);
 
     return null;
-  };
+  };

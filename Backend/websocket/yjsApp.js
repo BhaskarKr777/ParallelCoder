@@ -21,8 +21,8 @@ import { assertMembership } from "../src/services/workspace.service.js";
   port instead of importing a script that binds a fixed port and
   installs global SIGTERM/SIGINT handlers as a side effect of import.
 */
-export const createYjsServer = () => {
-  const server = http.createServer();
+export const createYjsServer = (options = {}) => {
+  const server = options.noServer ? null : options.server || http.createServer();
 
   /*
     Reject the upgrade before the socket is accepted unless the
@@ -34,6 +34,21 @@ export const createYjsServer = () => {
   */
   const verifyClient = async (info, callback) => {
     try {
+      // 1. Origin verification to prevent CSWSH attacks
+      const reqOrigin = info.origin || info.req.headers.origin;
+      if (reqOrigin && env.frontendUrl) {
+        try {
+          const expectedOrigin = new URL(env.frontendUrl).origin;
+          const actualOrigin = new URL(reqOrigin).origin;
+          if (expectedOrigin !== actualOrigin) {
+            return callback(false, 403, "Forbidden Origin");
+          }
+        } catch {
+          // If URL parsing fails, reject
+          return callback(false, 403, "Invalid Origin");
+        }
+      }
+
       const fileId = info.req.url
         .split("?")[0]
         .replace(/^\//, "");
@@ -72,10 +87,11 @@ export const createYjsServer = () => {
     }
   };
 
-  const wss = new WebSocketServer({
-    server,
-    verifyClient,
-  });
+  const wssConfig = options.noServer
+    ? { noServer: true, verifyClient, maxPayload: 512 * 1024 }
+    : { server, verifyClient, maxPayload: 512 * 1024 };
+
+  const wss = new WebSocketServer(wssConfig);
 
   wss.on(
     "connection",
@@ -86,3 +102,4 @@ export const createYjsServer = () => {
 
   return { server, wss };
 };
+

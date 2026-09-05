@@ -16,14 +16,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # Lets api spawn sandboxed run containers (see runner.service.js)
-  # without ever touching the host's Docker socket directly. Only
-  # the container/image operations docker run/kill/rm actually need
-  # are allowlisted; everything else (exec, volumes, swarm, the
-  # socket itself) stays denied. api talks to this over the internal
-  # compose network only - no host port is published.
   docker-proxy:
-    image: tecnativa/docker-socket-proxy:latest
+    image: tecnativa/docker-socket-proxy:0.1.1
     restart: unless-stopped
     environment:
       CONTAINERS: 1
@@ -31,17 +25,17 @@ services:
       POST: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2375 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Builds the one image every sandboxed run container is spawned
-  # from (see runner.dockerfile + runner.service.js) - node/python/gcc/
-  # jdk baked into a single image instead of pulling one per
-  # language. This container never does anything itself; `api`
-  # depends on the build finishing, not on it staying up.
   runner-image:
     build:
       context: .
       dockerfile: runner.dockerfile
-    image: parallel-coder-runner:latest
+    image: parallel-coder-runner:1.0.0
     command: ["true"]
 
   migrate:
@@ -50,6 +44,7 @@ services:
       dockerfile: dockerfile
       args:
         VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    restart: on-failure
     command: ["npx", "prisma", "migrate", "deploy"]
     environment: &backend_env
       DATABASE_URL: postgresql://${POSTGRES_USER:-parallel_coder}:${POSTGRES_PASSWORD:-parallel_coder}@postgres:5432/${POSTGRES_DB:-parallel_coder}?schema=public
@@ -73,12 +68,19 @@ services:
       dockerfile: dockerfile
       args:
         VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    restart: unless-stopped
     command: ["node", "server.js"]
     environment:
       <<: *backend_env
       DOCKER_HOST: tcp://docker-proxy:2375
     ports:
       - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -93,6 +95,7 @@ services:
       dockerfile: dockerfile
       args:
         VITE_YJS_URL: ${VITE_YJS_URL:-ws://localhost:1234}
+    restart: unless-stopped
     command: ["node", "websocket/yjs-server.js"]
     environment:
       <<: *backend_env
@@ -101,6 +104,12 @@ services:
       - yjs_data:/data/yjs
     ports:
       - "${YJS_PORT:-1234}:1234"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'const ws = new (require(\"ws\"))(\"ws://localhost:1234\"); ws.on(\"open\", () => process.exit(0)); ws.on(\"error\", () => process.exit(1));'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -108,3 +117,4 @@ services:
 volumes:
   postgres_data:
   yjs_data:
+

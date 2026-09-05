@@ -4,6 +4,12 @@ const useChatStore =
   create((set) => ({
     messages: [],
 
+    setMessages:
+      (messages) =>
+        set({
+          messages,
+        }),
+
     addMessage:
       (message) =>
         set((state) => ({
@@ -21,4 +27,4 @@ const useChatStore =
   }));
 
 export default
-  useChatStore;
+  useChatStore;

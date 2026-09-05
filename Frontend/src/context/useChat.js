@@ -10,6 +10,12 @@ export const useChat =
           state.addMessage
       );
 
+    const setMessages =
+      useChatStore(
+        (state) =>
+          state.setMessages
+      );
+
     useEffect(() => {
       const handleMessage =
         (message) => {
@@ -18,22 +24,25 @@ export const useChat =
           );
         };
 
-      socket.off(
-        "receive-message"
-      );
+      const handleHistory =
+        (history) => {
+          if (Array.isArray(history)) {
+            setMessages(history);
+          }
+        };
 
-      socket.on(
-        "receive-message",
-        handleMessage
-      );
+      socket.off("receive-message");
+      socket.off("chat-history");
+
+      socket.on("receive-message", handleMessage);
+      socket.on("chat-history", handleHistory);
 
       return () => {
-        socket.off(
-          "receive-message",
-          handleMessage
-        );
+        socket.off("receive-message", handleMessage);
+        socket.off("chat-history", handleHistory);
       };
     }, [
       addMessage,
+      setMessages,
     ]);
-  };
+  };

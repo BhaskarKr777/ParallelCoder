@@ -81,31 +81,42 @@ export const findOrCreateOAuthUser = async ({
   username,
   avatar,
 }) => {
+  const providerIdStr = String(providerId);
+
+  // 1. Check if user exists with matching provider & providerId
   const existing = await prisma.user.findFirst({
-    where: { provider, providerId },
+    where: { provider, providerId: providerIdStr },
   });
 
   if (existing) {
     return publicUser(existing);
   }
 
-  const emailTaken = await prisma.user.findUnique({ where: { email } });
+  // 2. Check if user exists with matching email address
+  if (email) {
+    const userByEmail = await prisma.user.findUnique({ where: { email } });
 
-  if (emailTaken) {
-    const error = new Error(
-      `This email is already registered via ${emailTaken.provider}. Sign in with that method instead.`
-    );
-    error.status = 409;
-    throw error;
+    if (userByEmail) {
+      const updated = await prisma.user.update({
+        where: { id: userByEmail.id },
+        data: {
+          provider,
+          providerId: providerIdStr,
+          avatar: userByEmail.avatar || avatar,
+        },
+      });
+      return publicUser(updated);
+    }
   }
 
+  // 3. Create new OAuth user
   const user = await prisma.user.create({
     data: {
       email,
-      username,
+      username: username || `${provider.toLowerCase()}_user`,
       avatar,
       provider,
-      providerId,
+      providerId: providerIdStr,
     },
   });
 

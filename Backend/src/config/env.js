@@ -50,11 +50,22 @@ const jwtRefreshSecret = required("JWT_REFRESH_SECRET");
 
 validateProductionSecrets(databaseUrl, jwtAccessSecret, jwtRefreshSecret);
 
+const cleanUrl = (urlStr) => {
+  if (!urlStr) return "";
+  let clean = urlStr.trim().replace(/\/+$/, "");
+  if (isProduction && clean.startsWith("http://")) {
+    clean = clean.replace("http://", "https://");
+  }
+  return clean;
+};
+
+const frontendUrl = cleanUrl(required("FRONTEND_URL"));
+
 export const env = {
   isProduction,
   nodeEnv: process.env.NODE_ENV || "development",
   port: process.env.PORT || 3000,
-  frontendUrl: required("FRONTEND_URL"),
+  frontendUrl,
   databaseUrl,
 
   jwtAccessSecret,
@@ -63,13 +74,13 @@ export const env = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || "",
+    callbackUrl: cleanUrl(process.env.GOOGLE_CALLBACK_URL || "") || `${frontendUrl}/api/auth/google/callback`,
   },
 
   github: {
     clientId: process.env.GITHUB_CLIENT_ID || "",
     clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-    callbackUrl: process.env.GITHUB_CALLBACK_URL || "",
+    callbackUrl: cleanUrl(process.env.GITHUB_CALLBACK_URL || "") || `${frontendUrl}/api/auth/github/callback`,
   },
 };
 

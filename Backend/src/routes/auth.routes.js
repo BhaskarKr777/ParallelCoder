@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 
 import passport, { oauthAvailability } from "../config/passport.js";
 import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import {
   register,
@@ -43,6 +44,7 @@ const requireStrategy = (provider) => (req, res, next) => {
 const handleOAuthCallback = (provider) => (req, res, next) => {
   passport.authenticate(provider, { session: false }, (err, user, info) => {
     if (err || !user) {
+      logger.error({ err, info, provider }, "OAuth authentication callback failed");
       const msg = err?.message || info?.message || `${provider} authentication failed`;
       return res.redirect(`${env.frontendUrl}/login?error=${encodeURIComponent(msg)}`);
     }

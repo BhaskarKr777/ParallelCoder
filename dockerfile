@@ -33,4 +33,4 @@ RUN chown -R node:node /app
 
 USER node
 
-CMD [ "node", "server.js" ]
+CMD [ "node", "server.js" ]

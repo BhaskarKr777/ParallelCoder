@@ -19,6 +19,8 @@ import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // One structured log line per request/response, with a per-request
 // child logger at req.log for anything handlers need to add context
 // to. Mounted first so every request gets logged, including ones

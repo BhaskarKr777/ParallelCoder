@@ -39,6 +39,17 @@ const requireStrategy = (provider) => (req, res, next) => {
   next();
 };
 
+const handleOAuthCallback = (provider) => (req, res, next) => {
+  passport.authenticate(provider, { session: false }, (err, user, info) => {
+    if (err || !user) {
+      const msg = err?.message || info?.message || `${provider} authentication failed`;
+      return res.redirect(`${env.frontendUrl}/login?error=${encodeURIComponent(msg)}`);
+    }
+    req.user = user;
+    oauthCallback(req, res);
+  })(req, res, next);
+};
+
 router.get(
   "/google",
   requireStrategy("google"),
@@ -48,8 +59,7 @@ router.get(
 router.get(
   "/google/callback",
   requireStrategy("google"),
-  passport.authenticate("google", { session: false, failureRedirect: "/login" }),
-  oauthCallback
+  handleOAuthCallback("google")
 );
 
 router.get(
@@ -61,8 +71,7 @@ router.get(
 router.get(
   "/github/callback",
   requireStrategy("github"),
-  passport.authenticate("github", { session: false, failureRedirect: "/login" }),
-  oauthCallback
+  handleOAuthCallback("github")
 );
 
 export default router;

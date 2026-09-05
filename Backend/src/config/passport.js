@@ -18,6 +18,7 @@ if (oauthAvailability.google) {
         clientID: env.google.clientId,
         clientSecret: env.google.clientSecret,
         callbackURL: env.google.callbackUrl,
+        proxy: true,
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
@@ -25,7 +26,7 @@ if (oauthAvailability.google) {
             provider: "GOOGLE",
             providerId: profile.id,
             email: profile.emails?.[0]?.value,
-            username: profile.displayName,
+            username: profile.displayName || profile.name?.givenName || "Google User",
             avatar: profile.photos?.[0]?.value,
           });
 
@@ -47,6 +48,7 @@ if (oauthAvailability.github) {
         clientID: env.github.clientId,
         clientSecret: env.github.clientSecret,
         callbackURL: env.github.callbackUrl,
+        proxy: true,
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {

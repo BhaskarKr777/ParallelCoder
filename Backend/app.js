@@ -93,7 +93,11 @@ const publicDir = fs.existsSync(dockerPublicDir)
 app.use(express.static(publicDir));
 
 app.get(/^(?!\/api).*/, (_req, res, next) => {
-  res.sendFile(path.join(publicDir, "index.html"), (err) => {
+  const indexPath = path.join(publicDir, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    return res.status(404).send("Frontend build not found. Please run npm run build.");
+  }
+  res.sendFile(indexPath, (err) => {
     if (err) next(err);
   });
 });

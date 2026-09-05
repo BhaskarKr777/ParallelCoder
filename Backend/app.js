@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -77,13 +78,17 @@ app.use("/api/workspaces", workspaceRoutes);
 app.use("/api", fileRoutes);
 
 /*
-  Serve the built frontend (the Docker image copies Frontend's `dist`
-  output in here). Everything under /api falls through to notFound
-  above instead, and any other GET falls back to index.html so
-  client-side routing (React Router) works on a hard refresh/deep link.
+  Serve the built frontend. Automatically supports both Docker
+  (where Frontend dist is copied to Backend/Public) and standard
+  PaaS/Render builds (where Frontend dist is at ../Frontend/dist).
 */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const publicDir = path.join(__dirname, "Public");
+const dockerPublicDir = path.join(__dirname, "Public");
+const frontendDistDir = path.resolve(__dirname, "../Frontend/dist");
+
+const publicDir = fs.existsSync(dockerPublicDir)
+  ? dockerPublicDir
+  : frontendDistDir;
 
 app.use(express.static(publicDir));
 

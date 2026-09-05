@@ -17,7 +17,7 @@ if (oauthAvailability.google) {
       {
         clientID: env.google.clientId,
         clientSecret: env.google.clientSecret,
-        callbackURL: env.google.callbackUrl,
+        callbackURL: env.google.callbackUrl || `${env.frontendUrl}/api/auth/google/callback`,
         proxy: true,
       },
       async (_accessToken, _refreshToken, profile, done) => {
@@ -53,7 +53,7 @@ if (oauthAvailability.github) {
       {
         clientID: env.github.clientId,
         clientSecret: env.github.clientSecret,
-        callbackURL: env.github.callbackUrl,
+        callbackURL: env.github.callbackUrl || `${env.frontendUrl}/api/auth/github/callback`,
         proxy: true,
       },
       async (_accessToken, _refreshToken, profile, done) => {

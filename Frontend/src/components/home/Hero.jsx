@@ -55,52 +55,6 @@ const Hero = () => {
             </a>
           </div>
 
-          {/* Interactive Live Collaboration Preview Card */}
-          <div className="mt-12 w-full max-w-3xl rounded-2xl border border-zinc-800/80 bg-zinc-950/90 backdrop-blur-2xl p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] text-left">
-            {/* Header bar */}
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-zinc-800/60">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                <span className="ml-2 text-xs font-mono text-zinc-400 flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5 text-zinc-500" />
-                  main.js — Parallel Workspace
-                </span>
-              </div>
-              
-              {/* Active Users Avatars Badge */}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  3 Active Coders
-                </span>
-              </div>
-            </div>
-
-            {/* Code Snippet lines with user cursor badges */}
-            <div className="font-mono text-xs sm:text-sm space-y-2 text-zinc-300 overflow-x-auto">
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-600 select-none w-4 text-right">1</span>
-                <span><span className="text-purple-400">import</span> &#123; YjsProvider &#125; <span className="text-purple-400">from</span> <span className="text-emerald-300">'@parallel/collaboration'</span>;</span>
-              </div>
-              <div className="flex items-center gap-3 relative">
-                <span className="text-zinc-600 select-none w-4 text-right">2</span>
-                <span><span className="text-blue-400">const</span> room = <span className="text-purple-400">new</span> <span className="text-yellow-300">YjsProvider</span>(<span className="text-emerald-300">'global-session'</span>);</span>
-                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500 text-black text-[10px] font-bold shadow">
-                  Bhaskar (Host)
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-600 select-none w-4 text-right">3</span>
-                <span>room.<span className="text-blue-300">onSync</span>(() =&gt; console.<span className="text-yellow-300">log</span>(<span className="text-emerald-300">'Realtime sync connected!'</span>));</span>
-                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500 text-white text-[10px] font-bold shadow">
-                  Alex (Editing)
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Quick Feature Badges Row */}
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full max-w-4xl text-left">
             <div className="p-3.5 sm:p-4 rounded-xl border border-zinc-800/60 bg-zinc-950/40 backdrop-blur-sm flex items-center gap-3">

@@ -8,10 +8,29 @@ import usePresenceStore from "../store/presenceStore";
   proxy or same-origin serving can cover, so it's configured at
   build time instead of hardcoded.
 */
-const YJS_URL =
-  import.meta.env
-    .VITE_YJS_URL ||
-  "ws://localhost:1234";
+const getCleanYjsUrl = () => {
+  let raw = (import.meta.env.VITE_YJS_URL || "").trim();
+
+  // Strip invalid characters like angle brackets < > or quotes
+  raw = raw.replace(/['"<>]/g, "").replace(/\/+$/, "");
+
+  if (raw.startsWith("http://")) raw = raw.replace("http://", "ws://");
+  if (raw.startsWith("https://")) raw = raw.replace("https://", "wss://");
+
+  const isWindowDefined = typeof window !== "undefined";
+  const isProdHost = isWindowDefined && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+
+  if (!raw || (isProdHost && raw.includes("localhost"))) {
+    if (isWindowDefined) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      return `${protocol}//${window.location.host}`;
+    }
+  }
+
+  return raw || "ws://localhost:1234";
+};
+
+const YJS_URL = getCleanYjsUrl();
 
 const rooms =
   new Map();

@@ -19,7 +19,9 @@ const UNSAFE_SECRETS = new Set([
   "default",
 ]);
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
 
 const validateProductionSecrets = (databaseUrl, jwtAccessSecret, jwtRefreshSecret) => {
   if (!isProduction) return;
@@ -57,7 +59,7 @@ const cleanUrl = (urlStr) => {
     .replace(/['"]/g, "")
     .replace(/[\r\n\t]/g, "")
     .replace(/\/+$/, "");
-  if (isProduction && clean.startsWith("http://")) {
+  if ((isProduction || clean.includes(".onrender.com")) && clean.startsWith("http://")) {
     clean = clean.replace("http://", "https://");
   }
   return clean;

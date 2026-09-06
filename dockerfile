@@ -31,6 +31,6 @@ COPY --from=frontend-builder /app/dist /app/Public
 
 RUN chown -R node:node /app
 
-USER node
+ENV NODE_ENV=production
 
 CMD [ "sh", "-c", "npx prisma migrate deploy && node server.js" ]

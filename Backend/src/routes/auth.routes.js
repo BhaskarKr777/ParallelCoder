@@ -13,6 +13,7 @@ import {
   me,
   refresh,
   oauthCallback,
+  getRedirectUrl,
 } from "../controllers/auth.controller.js";
 
 const router = Router();
@@ -48,9 +49,8 @@ const handleOAuthCallback = (provider) => (req, res, next) => {
     if (err || !user) {
       logger.error({ err, info, provider }, "OAuth authentication callback failed");
       const msg = err?.message || info?.message || `${provider} authentication failed`;
-      const targetUrl = new URL("/login", env.frontendUrl);
-      targetUrl.searchParams.set("error", msg);
-      return res.redirect(targetUrl.toString());
+      const targetUrl = getRedirectUrl(req, "/login", msg);
+      return res.redirect(targetUrl);
     }
     req.user = user;
     oauthCallback(req, res);

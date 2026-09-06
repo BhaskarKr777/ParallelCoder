@@ -15,6 +15,22 @@ import useAuthStore from "../store/authStore";
 import useWorkspaceStore from "../store/workspaceStore";
 import { workspaceApi } from "../services/api";
 
+const formatTimeAgo = (dateInput) => {
+  if (!dateInput) return "Recently";
+  const date = new Date(dateInput);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - date) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  return date.toLocaleDateString();
+};
+
 const Dashboard = () => {
   const [openModal, setOpenModal] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -239,35 +255,28 @@ const Dashboard = () => {
 
               <div className="space-y-6 text-sm">
 
-                <div>
-                  <p className="text-zinc-200">
-                    Bhaskar edited Hero.jsx
+                {workspaces.length === 0 ? (
+                  <p className="text-zinc-500 text-sm">
+                    No recent activity yet. Create or join a workspace to start collaborating.
                   </p>
+                ) : (
+                  workspaces.map((workspace) => (
+                    <div key={workspace.id} className="border-b border-zinc-800/60 pb-4 last:border-0 last:pb-0">
+                      <p className="text-zinc-200 font-medium">
+                        {workspace.role === "OWNER" ? "Created" : "Joined"} workspace "{workspace.name}"
+                      </p>
 
-                  <span className="text-zinc-500">
-                    10 min ago
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-zinc-200">
-                    Sarah joined workspace
-                  </p>
-
-                  <span className="text-zinc-500">
-                    1 hour ago
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-zinc-200">
-                    Auth.js deployed
-                  </p>
-
-                  <span className="text-zinc-500">
-                    Yesterday
-                  </span>
-                </div>
+                      <div className="flex items-center justify-between mt-1 text-xs">
+                        <span className="text-emerald-400 font-medium">
+                          {workspace.role} · {workspace.memberCount} member{workspace.memberCount !== 1 ? "s" : ""}
+                        </span>
+                        <span className="text-zinc-500">
+                          {formatTimeAgo(workspace.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
 
               </div>
             </div>

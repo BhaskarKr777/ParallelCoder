@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import useAuthStore from "../store/authStore";
 import { authApi } from "../services/api";
@@ -39,6 +39,8 @@ const GitHubIcon = (props) => (
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlError = searchParams.get("error");
   const login = useAuthStore((state) => state.login);
   const register = useAuthStore((state) => state.register);
 
@@ -46,6 +48,8 @@ const Login = () => {
   const [form, setForm] = useState({ email: "", username: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const displayError = error || urlError;
 
   const updateField = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -216,8 +220,8 @@ const Login = () => {
                     className="w-full h-12 rounded-2xl bg-zinc-900 border border-zinc-800 px-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600 transition"
                   />
 
-                  {error && (
-                    <p className="text-sm text-red-400">{error}</p>
+                  {displayError && (
+                    <p className="text-sm text-red-400 font-medium bg-red-950/40 border border-red-800/60 rounded-xl p-3 text-center">{displayError}</p>
                   )}
 
                   <button

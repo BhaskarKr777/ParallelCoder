@@ -42,8 +42,19 @@ const requireStrategy = (provider) => (req, res, next) => {
   next();
 };
 
+const getOAuthCallbackUrl = (req, provider) => {
+  if (env[provider]?.callbackUrl) {
+    return env[provider].callbackUrl;
+  }
+  const isHttps = req.secure || req.headers["x-forwarded-proto"] === "https" || env.isProduction;
+  const protocol = isHttps ? "https" : req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${protocol}://${host}/api/auth/${provider}/callback`;
+};
+
 const handleOAuthCallback = (provider) => (req, res, next) => {
-  passport.authenticate(provider, { session: false }, (err, user, info) => {
+  const callbackURL = getOAuthCallbackUrl(req, provider);
+  passport.authenticate(provider, { callbackURL, session: false }, (err, user, info) => {
     if (res.headersSent) return;
 
     if (err || !user) {
@@ -60,7 +71,14 @@ const handleOAuthCallback = (provider) => (req, res, next) => {
 router.get(
   "/google",
   requireStrategy("google"),
-  passport.authenticate("google", { scope: ["profile", "email"], session: false })
+  (req, res, next) => {
+    const callbackURL = getOAuthCallbackUrl(req, "google");
+    passport.authenticate("google", {
+      callbackURL,
+      scope: ["profile", "email"],
+      session: false,
+    })(req, res, next);
+  }
 );
 
 router.get(
@@ -72,7 +90,14 @@ router.get(
 router.get(
   "/github",
   requireStrategy("github"),
-  passport.authenticate("github", { scope: ["user:email"], session: false })
+  (req, res, next) => {
+    const callbackURL = getOAuthCallbackUrl(req, "github");
+    passport.authenticate("github", {
+      callbackURL,
+      scope: ["user:email"],
+      session: false,
+    })(req, res, next);
+  }
 );
 
 router.get(

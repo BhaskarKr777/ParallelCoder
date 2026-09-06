@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import logoSvg from "../../assets/images/logo.svg";
 
 const Navbar = () => {
   const [openMenu, setOpenMenu] = useState(false);
@@ -15,9 +16,10 @@ const Navbar = () => {
           {/* Logo */}
           <Link
             to="/"
-            className="text-2xl font-semibold tracking-tight text-white"
+            className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-white"
           >
-            Parallel Coder
+            <img src={logoSvg} alt="Parallel Coder" className="w-8 h-8 object-contain" />
+            <span>Parallel Coder</span>
           </Link>
 
           {/* Desktop Nav */}

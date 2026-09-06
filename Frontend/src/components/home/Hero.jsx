@@ -22,22 +22,11 @@ const Hero = () => {
 
         <div className="max-w-5xl mx-auto flex flex-col items-center">
 
-          {/* Top Announcement Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-zinc-800 bg-zinc-950/80 backdrop-blur-xl text-zinc-300 text-xs sm:text-sm mb-6 sm:mb-8 shadow-[0_0_25px_rgba(16,185,129,0.1)] hover:border-emerald-500/40 transition-all duration-300">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="font-medium text-white">v1.0 is Live</span>
-            <span className="text-zinc-600">|</span>
-            <span className="text-zinc-400">Real-time Collaborative Code Editor</span>
-          </div>
-
           {/* Main Heading */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05] sm:leading-[0.98]">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal tracking-tight leading-[1.05] sm:leading-[0.98]">
             Build software,
             <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent font-medium">
               together.
             </span>
           </h1>

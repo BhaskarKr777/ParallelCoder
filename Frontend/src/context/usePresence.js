@@ -68,87 +68,46 @@ export const usePresence =
         user
       );
 
-      setWorkspaceId(
-        workspaceId
-      );
+      setWorkspaceId(workspaceId);
 
-      /*
-        Join workspace
-        (server derives identity from the session;
-        only the cosmetic color is sent)
-      */
-      socket.emit(
-        "join-workspace",
-        {
-          workspaceId,
-
-          color,
+      const joinWorkspace = () => {
+        if (!socket.connected) {
+          socket.connect();
         }
-      );
+        socket.emit("join-workspace", {
+          workspaceId,
+          color,
+        });
+      };
+
+      joinWorkspace();
+      socket.on("connect", joinWorkspace);
 
       /*
         Receive users
       */
-      const handleUsers =
-        (users) => {
-          const unique =
-            Array.from(
-              new Map(
-                users.map(
-                  (u) => [
-                    u.socketId,
-                    u,
-                  ]
-                )
-              ).values()
-            );
-
-          /*
-            Replace full list
-          */
-          setUsers(
-            unique
-          );
-        };
+      const handleUsers = (users) => {
+        const unique = Array.from(
+          new Map(users.map((u) => [u.socketId, u])).values()
+        );
+        setUsers(unique);
+      };
 
       /*
         Live editing
       */
-      const handleEditing =
-        ({
-          socketId,
-          file,
-        }) => {
-          setUserEditing(
-            socketId,
-            file
-          );
-        };
+      const handleEditing = ({ socketId, file }) => {
+        setUserEditing(socketId, file);
+      };
 
-      socket.on(
-        "workspace-users",
-        handleUsers
-      );
-
-      socket.on(
-        "user-editing",
-        handleEditing
-      );
+      socket.on("workspace-users", handleUsers);
+      socket.on("user-editing", handleEditing);
 
       return () => {
-        socket.off(
-          "workspace-users",
-          handleUsers
-        );
-
-        socket.off(
-          "user-editing",
-          handleEditing
-        );
-
-        removeUser(
-          socket.id
-        );
+        socket.off("connect", joinWorkspace);
+        socket.off("workspace-users", handleUsers);
+        socket.off("user-editing", handleEditing);
+        removeUser(socket.id);
       };
     }, [
       workspaceId,

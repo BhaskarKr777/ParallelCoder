@@ -94,7 +94,15 @@ export const registerCollaborationHandlers = (io) => {
         const trimmedMessage = message.trim();
         if (!trimmedMessage) return;
 
-        if (!socket.data.workspaces.has(workspaceId)) return;
+        if (!socket.data.workspaces.has(workspaceId)) {
+          try {
+            await assertMembership(currentUser().id, workspaceId);
+            socket.join(workspaceId);
+            socket.data.workspaces.add(workspaceId);
+          } catch {
+            return;
+          }
+        }
 
         // Per-socket simple rate limit (max 60 messages/minute)
         const now = Date.now();

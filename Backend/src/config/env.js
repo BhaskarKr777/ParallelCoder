@@ -56,7 +56,7 @@ const cleanUrl = (urlStr) => {
   if (!urlStr) return "";
   let clean = urlStr
     .trim()
-    .replace(/['"]/g, "")
+    .replace(/['"<>]/g, "")
     .replace(/[\r\n\t]/g, "")
     .replace(/\/+$/, "");
   if ((isProduction || clean.includes(".onrender.com")) && clean.startsWith("http://")) {

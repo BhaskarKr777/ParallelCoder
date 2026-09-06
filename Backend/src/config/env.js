@@ -58,7 +58,8 @@ const cleanUrl = (urlStr) => {
     .trim()
     .replace(/['"<>]/g, "")
     .replace(/[\r\n\t]/g, "")
-    .replace(/\/+$/, "");
+    .replace(/\/+$/, "")
+    .replace(/\.onrender\.onrender\.com$/i, ".onrender.com");
   if ((isProduction || clean.includes(".onrender.com")) && clean.startsWith("http://")) {
     clean = clean.replace("http://", "https://");
   }

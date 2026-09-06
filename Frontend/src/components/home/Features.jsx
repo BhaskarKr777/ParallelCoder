@@ -52,23 +52,23 @@ const Features = () => {
         </div>
 
         {/* Features Row */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
           {features.map((feature, index) => (
             <div
               key={index}
-              className="rounded-[30px] border border-zinc-800 bg-zinc-950/50 p-8 hover:border-zinc-700 hover:bg-zinc-900/60 transition duration-300"
+              className="rounded-[24px] sm:rounded-[30px] border border-zinc-800 bg-zinc-950/50 p-6 sm:p-8 hover:border-zinc-700 hover:bg-zinc-900/60 hover:-translate-y-1 transition duration-300"
             >
 
-              <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 mb-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 mb-6">
                 {feature.icon}
               </div>
 
-              <h3 className="text-2xl font-medium mb-3">
+              <h3 className="text-xl sm:text-2xl font-medium mb-3">
                 {feature.title}
               </h3>
 
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
                 {feature.description}
               </p>
 

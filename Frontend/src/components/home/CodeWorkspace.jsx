@@ -33,33 +33,34 @@ const CodeWorkspace = () => {
                 </div>
 
                 {/* Editor Container */}
-                <div className="rounded-[36px] overflow-hidden border border-zinc-800 bg-[#0F0F11] shadow-[0_0_60px_rgba(255,255,255,0.03)]">
+                <div className="rounded-[28px] sm:rounded-[36px] overflow-hidden border border-zinc-800 bg-[#0F0F11] shadow-[0_0_60px_rgba(255,255,255,0.03)]">
 
-                    <div className="grid lg:grid-cols-[280px_1fr] min-h-[540px]">
+                    <div className="grid lg:grid-cols-[280px_1fr] min-h-[480px] sm:min-h-[540px]">
 
                         {/* Sidebar */}
-                        <aside className="bg-white border-r border-zinc-300 p-6 text-black">
+                        <aside className="bg-zinc-950 border-b lg:border-b-0 lg:border-r border-zinc-800 p-5 sm:p-6 text-white">
 
-                            <h2 className="text-2xl font-bold border-b border-zinc-300 pb-4 text-black">
-                                Users
+                            <h2 className="text-xl sm:text-2xl font-bold border-b border-zinc-800 pb-4 text-white">
+                                Active Users
                             </h2>
 
-                            <ul className="mt-6 space-y-3">
+                            <ul className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
 
                                 {users.map((user) => (
                                     <li
                                         key={user}
-                                        className="p-4 rounded-2xl bg-zinc-100 text-black border border-zinc-200 hover:bg-zinc-200 transition"
+                                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-900/80 text-zinc-200 border border-zinc-800/80 hover:bg-zinc-800/80 transition flex items-center justify-between text-sm sm:text-base font-medium"
                                     >
-                                        {user}
+                                        <span>{user}</span>
+                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                                     </li>
                                 ))}
 
                             </ul>
 
-                            <div className="mt-8 flex items-center gap-3 text-sm text-zinc-600">
+                            <div className="mt-6 sm:mt-8 flex items-center gap-3 text-xs sm:text-sm text-zinc-400">
 
-                                <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
 
                                 3 collaborators online
                             </div>

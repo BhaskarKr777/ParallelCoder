@@ -1,125 +1,190 @@
-# Parallel Coder
+# 🚀 Parallel Coder
 
-Parallel Coder is a real-time collaborative coding workspace. Teams can create workspaces, edit files together, chat, manage member roles, and run supported code in an isolated Docker sandbox.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-parallelcoder.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://parallelcoder.onrender.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-v20+-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-v19-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Sandbox-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 
-## Features
+**Parallel Coder** is a production-grade, real-time collaborative coding workspace. Teams can create shared workspaces, edit files simultaneously with real-time cursor presence, chat, manage member permissions, and execute code in an isolated Docker sandbox.
 
-- Email/password, Google, and GitHub authentication
-- Shared workspaces with owner, admin, editor, and viewer roles
-- Live collaborative editing with Yjs and WebSockets
-- Workspace chat with **PostgreSQL persistence** & online presence
-- File explorer and Monaco editor
-- One-time invitation codes, valid for seven days
-- Sandboxed execution for JavaScript, Python, C, C++, and Java with size & rate controls
-- PostgreSQL persistence with Prisma
-- **Production Hardening**: WebSocket origin validation, 512KB frame limits, fail-fast production secret validation, immutable non-root containers, and health check endpoints
+🌐 **Live Application**: [https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)
 
-## Tech stack
+---
 
-- Frontend: React, Vite, Tailwind CSS, Zustand, Monaco Editor
-- Backend: Node.js, Express, Socket.IO, Yjs, Zod, Pino
-- Database: PostgreSQL and Prisma
-- Runtime: Docker Compose, Docker socket proxy, and a restricted runner image
+## 🌟 Key Features
 
-## Prerequisites
+- **🌐 Live Demo Available**: Try out the full application live on Render at [parallelcoder.onrender.com](https://parallelcoder.onrender.com/).
+- **🔑 Authentication**: Secure Email/Password, Google OAuth, and GitHub OAuth support.
+- **👥 Live Collaboration**: Concurrent multi-user code editing powered by **Yjs** and **WebSockets** with active cursor and presence tracking.
+- **💻 Monaco Editor & File Explorer**: Rich IDE experience built with VS Code's Monaco Editor supporting multi-language syntax highlighting.
+- **⚡ Isolated Code Sandbox**: Multi-language code execution engine supporting **JavaScript, Python, C, C++, and Java** inside restricted Docker containers with rate limiting and execution limits.
+- **💬 Workspace Chat & Presence**: Real-time channel chat backed by **PostgreSQL persistence** and active status indicators.
+- **🛡️ Role-Based Access Control (RBAC)**: Fine-grained workspace permissions for **Owner**, **Admin**, **Editor**, and **Viewer** roles.
+- **🎟️ Single-Use Invitation Codes**: Secure invitation code generator with custom roles and a 7-day expiration window.
+- **🔒 Hardened Production Architecture**: WebSocket origin validation, 512KB payload limits, non-root Docker containers, fail-fast production secret checks, and dedicated `/health` endpoints.
 
-- Node.js 20+
-- npm
-- Docker Desktop (or Docker Engine) for Docker Compose and code execution
-- PostgreSQL, unless using the included Docker Compose setup
+---
 
-## Local development
+## 🛠️ Tech Stack
 
-1. Install the root development dependency:
+| Domain | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Zustand, Monaco Editor (`@monaco-editor/react`), Lucide Icons, Framer Motion |
+| **Backend** | Node.js, Express 5, Socket.IO, Yjs (`y-websocket`, `y-leveldb`), Zod, Pino Logging, Passport.js |
+| **Database & ORM** | PostgreSQL, Prisma ORM |
+| **Execution Engine** | Docker Engine, Docker Socket Proxy, Restricted Non-Root Runner Containers |
+| **Deployment & Ops** | Render, Docker Compose |
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Install application dependencies:
+## 🌐 Live Demo
 
-   ```bash
-   npm install --prefix Backend
-   npm install --prefix Frontend
-   ```
+Experience **Parallel Coder** in action without any local setup:
 
-3. Create `Backend/.env` with your database URL and secrets. At minimum:
+👉 **[https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)**
 
-   ```env
-   DATABASE_URL="postgresql://parallel_coder:parallel_coder@localhost:5433/parallel_coder?schema=public"
-   JWT_ACCESS_SECRET=replace_with_a_long_random_value
-   JWT_REFRESH_SECRET=replace_with_a_different_long_random_value
-   FRONTEND_URL=http://localhost:5173
-   ```
+1. Create a free account or sign in with Google / GitHub.
+2. Create a new workspace or join an existing workspace with an invitation code.
+3. Open files in the Monaco editor, invite collaborators, and run code directly in the cloud sandbox!
 
-4. Start PostgreSQL with Docker Compose, then apply migrations:
+---
 
-   ```bash
-   docker compose up -d postgres
-   cd Backend
-   npx prisma migrate deploy
-   cd ..
-   ```
+## 🚀 Quick Start (Local Development)
 
-5. Start the backend, Yjs server, and frontend together:
+### Prerequisites
 
-   ```bash
-   npm run dev
-   ```
+- **Node.js**: v20 or higher
+- **npm**: v10 or higher
+- **Docker Desktop / Docker Engine**: Required for containerized code execution sandbox
+- **PostgreSQL**: Local database instance (or use the provided Docker Compose configuration)
 
-The frontend runs at `http://localhost:5173`. Vite forwards API requests to the backend during development.
-
-## Docker deployment & Production Operations
-
-Docker Compose starts PostgreSQL, migrations, the API/frontend application, the Yjs server, a Docker socket proxy, and the sandbox runner image with container health checks and restart policies.
+### 1. Repository Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/BhaskarKr777/ParallelCoder.git
+cd ParallelCoder
+
+# Install root development dependencies
+npm install
+
+# Install workspace dependencies
+npm install --prefix Backend
+npm install --prefix Frontend
+```
+
+### 2. Environment Configuration
+
+Create a `.env` file inside the `Backend/` directory:
+
+```env
+# Database Connection
+DATABASE_URL="postgresql://parallel_coder:parallel_coder@localhost:5433/parallel_coder?schema=public"
+
+# Authentication & JWT Secrets
+JWT_ACCESS_SECRET=replace_with_a_long_random_secret_key
+JWT_REFRESH_SECRET=replace_with_another_different_long_secret_key
+
+# Frontend Integration
+FRONTEND_URL=http://localhost:5173
+
+# Optional OAuth Credentials
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+```
+
+### 3. Database Migration & Docker Setup
+
+Start the local PostgreSQL container and run Prisma migrations:
+
+```bash
+# Start PostgreSQL via Docker Compose
+docker compose up -d postgres
+
+# Apply Prisma database migrations
+cd Backend
+npx prisma migrate deploy
+cd ..
+```
+
+### 4. Run Development Servers
+
+Start the backend API, Yjs WebSocket server, and Vite frontend concurrently:
+
+```bash
+npm run dev
+```
+
+- **Frontend Application**: `http://localhost:5173`
+- **Backend REST API & WebSockets**: `http://localhost:3000`
+- **Health Check Endpoint**: `http://localhost:3000/health`
+
+---
+
+## 🐳 Docker Deployment & Production
+
+To launch the full production-hardened environment including PostgreSQL, migration runner, API server, Yjs server, Docker socket proxy, and the runner sandbox:
+
+```bash
+# Build and launch all services in detached mode
 docker compose up --build -d
 ```
 
-The API is available on `http://localhost:3000` by default. Health check endpoints are exposed at `http://localhost:3000/health`.
+For detailed guides on **Horizontal Scaling (Redis Adapter)**, **Automated PostgreSQL S3 Backups**, **Prometheus & Grafana Monitoring**, and **Disaster Recovery**, see **[PRODUCTION_OPERATIONS.md](PRODUCTION_OPERATIONS.md)**.
 
-For horizontal scaling (Redis adapter & Yjs pub/sub), automated database backups (`pg_dump` S3 sync), Prometheus monitoring, and disaster recovery instructions, see **[PRODUCTION_OPERATIONS.md](PRODUCTION_OPERATIONS.md)**.
+---
 
-## Invitation codes
+## 🎟️ Workspace Invitations
 
-1. Open a workspace and select **Members**.
-2. Select the role for the recipient and choose **Create code**.
-3. Copy the generated code and send it to one person.
-4. The recipient signs in, pastes the code into the Dashboard invitation-code field, and selects **Join**.
+1. Navigate to a workspace and click on **Members**.
+2. Select the role for the invited user (**Admin**, **Editor**, or **Viewer**) and click **Create code**.
+3. Share the generated code with your team member.
+4. The recipient enters the code in the Dashboard **Invitation Code** field and clicks **Join**.
 
-Codes expire after seven days and can only be redeemed once. Owners and admins can create codes.
+> 💡 *Invitation codes expire automatically after 7 days and are single-use only.*
 
-## Database migrations
+---
 
-Run migrations whenever pulling changes that alter the Prisma schema:
-
-```bash
-cd Backend
-npx prisma migrate deploy
-```
-
-## Testing & CI
-
-Backend tests auto-detect Docker daemon availability. Runner integration tests execute when Docker is running and gracefully handle local environments where Docker is stopped.
+## 🧪 Testing & Code Quality
 
 ```bash
+# Build the code execution sandbox runner image
 docker build -f runner.dockerfile -t parallel-coder-runner:1.0.0 .
+
+# Run Backend unit & integration tests (Vitest)
 npm test --prefix Backend
+
+# Run Frontend linter
 npm run lint --prefix Frontend
+
+# Build production Frontend bundle
 npm run build --prefix Frontend
 ```
 
-## Project structure
+---
+
+## 📁 Project Structure
 
 ```text
 ParallelCoder/
-├── Backend/                 # Express API, Prisma schema, tests, and Yjs server
-├── Frontend/                # React/Vite application
-├── PRODUCTION_OPERATIONS.md # Scale, backup, and monitoring guide
-├── docker-compose.yml
-├── dockerfile               # Hardened non-root production image
-├── runner.dockerfile
-└── .github/                 # CI workflow
+├── Backend/                 # Express REST API, Prisma schema, Socket.IO, Yjs server, and tests
+├── Frontend/                # React 19, Vite, Tailwind CSS v4, Monaco Editor app
+├── PRODUCTION_OPERATIONS.md # Production scaling, backups, and disaster recovery guide
+├── docker-compose.yml       # Production multi-container composition
+├── dockerfile               # Hardened non-root application container build
+├── runner.dockerfile        # Isolated code execution sandbox container image
+├── package.json             # Root monorepo build and development scripts
+└── README.md                # Project documentation
 ```
+
+---
+
+## 📄 License
+
+This project is developed under the **ISC License**. Created by [Bhaskar Kumar](https://github.com/BhaskarKr777).
+
 

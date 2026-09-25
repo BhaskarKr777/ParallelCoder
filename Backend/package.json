@@ -39,7 +39,7 @@
     "ws": "^8.18.3",
     "y-leveldb": "^0.1.2",
     "y-websocket": "^2.1.0",
-    "yjs": "^13.6.30",
+    "yjs": "^13.6.32",
     "zod": "^4.4.3"
   },
   "devDependencies": {

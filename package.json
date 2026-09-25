@@ -9,6 +9,6 @@
     "test": "node --test tests/core.test.js && npm test --prefix Backend"
   },
   "devDependencies": {
-    "concurrently": "^9.2.4"
+    "concurrently": "^10.0.5"
   }
 }

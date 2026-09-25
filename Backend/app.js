@@ -71,7 +71,7 @@ app.use("/api", apiLimiter);
 app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: "Parallel Coder Backend Healthy 🚀",
+    message: "Parallel Coder Backend Healthy",
   });
 });
 

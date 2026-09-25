@@ -1,4 +1,4 @@
-# 🚀 Parallel Coder
+# Parallel Coder
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-parallelcoder.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://parallelcoder.onrender.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-v20+-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
@@ -9,25 +9,25 @@
 
 **Parallel Coder** is a production-grade, real-time collaborative coding workspace. Teams can create shared workspaces, edit files simultaneously with real-time cursor presence, chat, manage member permissions, and execute code in an isolated Docker sandbox.
 
-🌐 **Live Application**: [https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)
+**Live Application**: [https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-- **🌐 Live Demo Available**: Try out the full application live on Render at [parallelcoder.onrender.com](https://parallelcoder.onrender.com/).
-- **🔑 Authentication**: Secure Email/Password, Google OAuth, and GitHub OAuth support.
-- **👥 Live Collaboration**: Concurrent multi-user code editing powered by **Yjs** and **WebSockets** with active cursor and presence tracking.
-- **💻 Monaco Editor & File Explorer**: Rich IDE experience built with VS Code's Monaco Editor supporting multi-language syntax highlighting.
-- **⚡ Isolated Code Sandbox**: Multi-language code execution engine supporting **JavaScript, Python, C, C++, and Java** inside restricted Docker containers with rate limiting and execution limits.
-- **💬 Workspace Chat & Presence**: Real-time channel chat backed by **PostgreSQL persistence** and active status indicators.
-- **🛡️ Role-Based Access Control (RBAC)**: Fine-grained workspace permissions for **Owner**, **Admin**, **Editor**, and **Viewer** roles.
-- **🎟️ Single-Use Invitation Codes**: Secure invitation code generator with custom roles and a 7-day expiration window.
-- **🔒 Hardened Production Architecture**: WebSocket origin validation, 512KB payload limits, non-root Docker containers, fail-fast production secret checks, and dedicated `/health` endpoints.
+- **Live Demo Available**: Try out the full application live on Render at [parallelcoder.onrender.com](https://parallelcoder.onrender.com/).
+- **Authentication**: Secure Email/Password, Google OAuth, and GitHub OAuth support.
+- **Live Collaboration**: Concurrent multi-user code editing powered by **Yjs** and **WebSockets** with active cursor and presence tracking.
+- **Monaco Editor & File Explorer**: Rich IDE experience built with VS Code's Monaco Editor supporting multi-language syntax highlighting.
+- **Isolated Code Sandbox**: Multi-language code execution engine supporting **JavaScript, Python, C, C++, and Java** inside restricted Docker containers with rate limiting and execution limits.
+- **Workspace Chat & Presence**: Real-time channel chat backed by **PostgreSQL persistence** and active status indicators.
+- **Role-Based Access Control (RBAC)**: Fine-grained workspace permissions for **Owner**, **Admin**, **Editor**, and **Viewer** roles.
+- **Single-Use Invitation Codes**: Secure invitation code generator with custom roles and a 7-day expiration window.
+- **Hardened Production Architecture**: WebSocket origin validation, 512KB payload limits, non-root Docker containers, fail-fast production secret checks, and dedicated `/health` endpoints.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Domain | Technologies |
 | :--- | :--- |
@@ -39,11 +39,11 @@
 
 ---
 
-## 🌐 Live Demo
+## Live Demo
 
 Experience **Parallel Coder** in action without any local setup:
 
-👉 **[https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)**
+**[https://parallelcoder.onrender.com](https://parallelcoder.onrender.com/)**
 
 1. Create a free account or sign in with Google / GitHub.
 2. Create a new workspace or join an existing workspace with an invitation code.
@@ -51,7 +51,7 @@ Experience **Parallel Coder** in action without any local setup:
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## Quick Start (Local Development)
 
 ### Prerequisites
 
@@ -125,7 +125,7 @@ npm run dev
 
 ---
 
-## 🐳 Docker Deployment & Production
+## Docker Deployment & Production
 
 To launch the full production-hardened environment including PostgreSQL, migration runner, API server, Yjs server, Docker socket proxy, and the runner sandbox:
 
@@ -138,18 +138,18 @@ For detailed guides on **Horizontal Scaling (Redis Adapter)**, **Automated Postg
 
 ---
 
-## 🎟️ Workspace Invitations
+## Workspace Invitations
 
 1. Navigate to a workspace and click on **Members**.
 2. Select the role for the invited user (**Admin**, **Editor**, or **Viewer**) and click **Create code**.
 3. Share the generated code with your team member.
 4. The recipient enters the code in the Dashboard **Invitation Code** field and clicks **Join**.
 
-> 💡 *Invitation codes expire automatically after 7 days and are single-use only.*
+*Invitation codes expire automatically after 7 days and are single-use only.*
 
 ---
 
-## 🧪 Testing & Code Quality
+## Testing & Code Quality
 
 ```bash
 # Build the code execution sandbox runner image
@@ -167,7 +167,7 @@ npm run build --prefix Frontend
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 ParallelCoder/
@@ -183,8 +183,6 @@ ParallelCoder/
 
 ---
 
-## 📄 License
+## License
 
-This project is developed under the **ISC License**. Created by [Bhaskar Kumar](https://github.com/BhaskarKr777).
-
-
+This project is developed under the **MIT License**. Created by [Bhaskar Kumar](https://github.com/BhaskarKr777).

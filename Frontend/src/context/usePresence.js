@@ -56,7 +56,7 @@ export const usePresence =
 
         avatar:
           authUser?.avatar ||
-          "👨‍💻",
+          "User",
 
         color,
       };

@@ -1,10 +1,12 @@
 {
   "name": "parallel-coder",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "npm run build --prefix Frontend && node -e \"const fs = require('fs'); fs.mkdirSync('Backend/Public', {recursive: true}); fs.cpSync('Frontend/dist', 'Backend/Public', {recursive: true});\"",
     "start": "npm start --prefix Backend",
-    "dev": "concurrently -n BACKEND,YJS,FRONTEND -c blue,magenta,green \"npm run dev --prefix Backend\" \"npm run yjs --prefix Backend\" \"npm run dev --prefix Frontend\""
+    "dev": "concurrently -n BACKEND,YJS,FRONTEND -c blue,magenta,green \"npm run dev --prefix Backend\" \"npm run yjs --prefix Backend\" \"npm run dev --prefix Frontend\"",
+    "test": "node --test tests/core.test.js && npm test --prefix Backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.4"

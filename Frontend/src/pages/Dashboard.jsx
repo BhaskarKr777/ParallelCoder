@@ -151,7 +151,7 @@ const Dashboard = () => {
               </p>
 
               <h1 className="text-4xl sm:text-5xl font-semibold mt-2 tracking-tight">
-                Welcome back, {user?.username || "there"} 👋
+                Welcome back, {user?.username || "there"}
               </h1>
 
               <p className="text-zinc-400 mt-3 text-lg">

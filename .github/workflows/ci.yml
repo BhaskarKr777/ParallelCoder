@@ -70,8 +70,21 @@ jobs:
           cache: npm
           cache-dependency-path: Frontend/package-lock.json
 
-      - run: npm ci
-
       - run: npm run lint
 
       - run: npm run build
+
+  root-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci || npm install
+
+      - run: npm test

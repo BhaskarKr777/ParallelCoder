@@ -39,11 +39,36 @@ export const createFile = async (workspaceId, { name, path, language }) => {
   });
 };
 
+const EXT_TO_LANGUAGE = {
+  js: "javascript",
+  jsx: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  py: "python",
+  c: "c",
+  h: "c",
+  cpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  hpp: "cpp",
+  java: "java",
+  json: "json",
+  css: "css",
+  html: "html",
+  md: "markdown",
+};
+
 export const updateFile = async (fileId, { content, name }) => {
   const data = {};
 
   if (content !== undefined) data.content = content;
-  if (name !== undefined) data.name = name;
+  if (name !== undefined) {
+    data.name = name;
+    const ext = name.split(".").pop()?.toLowerCase();
+    if (ext && EXT_TO_LANGUAGE[ext]) {
+      data.language = EXT_TO_LANGUAGE[ext];
+    }
+  }
 
   return prisma.file.update({ where: { id: fileId }, data });
 };

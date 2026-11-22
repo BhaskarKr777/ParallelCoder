@@ -35,38 +35,35 @@ const inferLanguage = (fileName = "") => {
   return LANGUAGE_BY_EXTENSION[ext] || "plaintext";
 };
 
-const getFileIcon = (
-  fileName = ""
-) => {
-  if (
-    fileName.endsWith(
-      ".jsx"
-    )
-  ) {
-    return (
-      <FileCode2
-        size={16}
-      />
-    );
+const getFileIcon = (fileName = "") => {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+
+  if (ext === "jsx" || ext === "js" || ext === "ts" || ext === "tsx") {
+    return <FileCode2 size={16} className="text-yellow-400" />;
+  }
+  if (ext === "py") {
+    return <FileCode2 size={16} className="text-sky-400" />;
+  }
+  if (ext === "c" || ext === "h") {
+    return <FileCode2 size={16} className="text-blue-400" />;
+  }
+  if (ext === "cpp" || ext === "cc" || ext === "cxx" || ext === "hpp") {
+    return <FileCode2 size={16} className="text-indigo-400" />;
+  }
+  if (ext === "java") {
+    return <FileCode2 size={16} className="text-orange-400" />;
+  }
+  if (ext === "html") {
+    return <FileCode2 size={16} className="text-rose-400" />;
+  }
+  if (ext === "css") {
+    return <FileCode2 size={16} className="text-cyan-400" />;
+  }
+  if (ext === "json") {
+    return <FileJson size={16} className="text-amber-400" />;
   }
 
-  if (
-    fileName.endsWith(
-      ".json"
-    )
-  ) {
-    return (
-      <FileJson
-        size={16}
-      />
-    );
-  }
-
-  return (
-    <FileText
-      size={16}
-    />
-  );
+  return <FileText size={16} className="text-neutral-400" />;
 };
 
 const Explorer = ({
@@ -95,7 +92,7 @@ const Explorer = ({
   const handleCreateFile = async () => {
     if (!canEdit) return;
 
-    const name = window.prompt("File name (e.g. index.js)");
+    const name = window.prompt("File name (e.g. main.py, main.cpp, Main.java, index.js)");
     if (!name?.trim()) return;
 
     const trimmed = name.trim();

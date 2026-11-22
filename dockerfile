@@ -19,7 +19,7 @@ FROM node:20.18.0-alpine as backend-builder
 
 WORKDIR /app
 
-RUN apk add --no-cache docker-cli
+RUN apk add --no-cache docker-cli python3 gcc g++ musl-dev openjdk17-jdk make
 
 COPY ./Backend/package.json ./Backend/package-lock.json ./
 RUN npm ci

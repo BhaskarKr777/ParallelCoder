@@ -186,9 +186,11 @@ const MonacoEditor = ({
           {/* Quick files */}
           <div className="flex justify-center gap-3 flex-wrap">
             {[
-              "App.jsx",
-              "Navbar.jsx",
-              "Hero.jsx",
+              "main.py",
+              "main.cpp",
+              "Main.java",
+              "main.c",
+              "index.js",
             ].map(
               (
                 file

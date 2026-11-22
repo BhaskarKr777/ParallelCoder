@@ -119,16 +119,24 @@ const Editor = () => {
   };
 
   const handleFileRenamed = (fileId, name) => {
+    const ext = name?.split(".").pop()?.toLowerCase();
+    const extMap = {
+      js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript",
+      py: "python", c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", hpp: "cpp",
+      java: "java", json: "json", css: "css", html: "html", md: "markdown"
+    };
+    const language = ext && extMap[ext] ? extMap[ext] : undefined;
+
     setFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, name } : f))
+      prev.map((f) => (f.id === fileId ? { ...f, name, ...(language ? { language } : {}) } : f))
     );
 
     setOpenTabs((prev) =>
-      prev.map((t) => (t.id === fileId ? { ...t, name } : t))
+      prev.map((t) => (t.id === fileId ? { ...t, name, ...(language ? { language } : {}) } : t))
     );
 
     setActiveTab((prev) =>
-      prev?.id === fileId ? { ...prev, name } : prev
+      prev?.id === fileId ? { ...prev, name, ...(language ? { language } : {}) } : prev
     );
   };
 
@@ -154,7 +162,16 @@ const Editor = () => {
       activeTab.content ??
       "";
 
-    const language = activeTab.language || "javascript";
+    const ext = activeTab.name?.split(".").pop()?.toLowerCase();
+    const extMap = {
+      js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript",
+      py: "python", c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", hpp: "cpp",
+      java: "java", json: "json", css: "css", html: "html", md: "markdown"
+    };
+    const inferred = ext ? extMap[ext] : null;
+    const language = (activeTab.language && activeTab.language !== "plaintext")
+      ? activeTab.language
+      : (inferred || "javascript");
 
     // HTML has no stdout/exit code - render it client-side instead of
     // routing it through the sandboxed container runner.

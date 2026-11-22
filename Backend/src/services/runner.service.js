@@ -1,5 +1,8 @@
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
 /*
   Runs untrusted user code in a locked-down, throwaway Docker
@@ -65,9 +68,6 @@ const LANGUAGE_IMAGES = {
   },
   java: {
     image: RUNNER_IMAGE,
-    // javac needs a real .java file on disk, and requires the public
-    // class name to match the filename - so submissions must define
-    // `class Main`, same constraint most single-file judges impose.
     command: [
       "sh",
       "-c",
@@ -84,29 +84,66 @@ const KILL_GRACE_MS = 2000;
 export const isRunnableLanguage = (language) =>
   Object.prototype.hasOwnProperty.call(LANGUAGE_IMAGES, language);
 
-const runLocalFallback = ({ language, content, onStdout, onStderr }) => {
+export const getJavaClassName = (content = "") => {
+  const cleaned = content.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "");
+  const publicMatch = cleaned.match(/\bpublic\s+(?:final\s+)?class\s+([A-Za-z0-9_$]+)/);
+  if (publicMatch) return publicMatch[1];
+  const classMatch = cleaned.match(/\bclass\s+([A-Za-z0-9_$]+)(?:\s+extends|\s+implements|\s*\{)/);
+  if (classMatch) return classMatch[1];
+  return "Main";
+};
+
+let dockerAvailable = null;
+let lastDockerCheck = 0;
+const DOCKER_CHECK_TTL = 30_000;
+
+export const isDockerDaemonAvailable = async () => {
+  const now = Date.now();
+  if (dockerAvailable !== null && now - lastDockerCheck < DOCKER_CHECK_TTL) {
+    return dockerAvailable;
+  }
+
   return new Promise((resolve) => {
-    let cmd = "";
-    let args = [];
+    const proc = spawn("docker", ["info"], { stdio: "ignore" });
+    const timer = setTimeout(() => {
+      proc.kill();
+      dockerAvailable = false;
+      lastDockerCheck = Date.now();
+      resolve(false);
+    }, 2000);
 
-    if (language === "javascript") {
-      cmd = "node";
-      args = ["-e", content ?? ""];
-    } else if (language === "python") {
-      cmd = process.platform === "win32" ? "python" : "python3";
-      args = ["-c", content ?? ""];
-    } else {
-      onStderr("[Runner Notice] Docker Desktop is not running. Please start Docker Desktop to execute C/C++/Java code.\n");
-      return resolve({ exitCode: 1, timedOut: false, truncated: false, error: "Docker daemon unavailable" });
-    }
+    proc.on("error", () => {
+      clearTimeout(timer);
+      dockerAvailable = false;
+      lastDockerCheck = Date.now();
+      resolve(false);
+    });
 
-    onStderr("[Runner Notice] Docker daemon unavailable - running in local development mode.\n");
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      dockerAvailable = code === 0;
+      lastDockerCheck = Date.now();
+      resolve(dockerAvailable);
+    });
+  });
+};
 
-    const proc = spawn(cmd, args, { stdio: ["pipe", "pipe", "pipe"] });
-
+const runProcess = ({ cmd, args, cwd, stdinContent, onStdout, onStderr, timeoutMs = TIMEOUT_MS }) => {
+  return new Promise((resolve) => {
     let outputBytes = 0;
     let truncated = false;
     let timedOut = false;
+    let proc = null;
+    let timeoutTimer = null;
+
+    try {
+      proc = spawn(cmd, args, {
+        cwd,
+        stdio: [stdinContent !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
+      });
+    } catch (err) {
+      return resolve({ exitCode: 1, timedOut: false, truncated: false, error: err.message });
+    }
 
     const forward = (emit) => (chunk) => {
       if (truncated) return;
@@ -123,32 +160,153 @@ const runLocalFallback = ({ language, content, onStdout, onStderr }) => {
     proc.stdout.on("data", forward(onStdout));
     proc.stderr.on("data", forward(onStderr));
 
-    const timeout = setTimeout(() => {
+    timeoutTimer = setTimeout(() => {
       timedOut = true;
       proc.kill("SIGKILL");
-    }, TIMEOUT_MS);
+    }, timeoutMs);
 
     proc.on("error", (err) => {
-      clearTimeout(timeout);
-      onStderr(`\n[Local Execution Error] ${err.message}\n`);
+      clearTimeout(timeoutTimer);
+      if (err.code === "ENOENT") {
+        onStderr(`\n[Execution Error] Command '${cmd}' not found on the host system. Ensure it is installed.\n`);
+      } else {
+        onStderr(`\n[Execution Error] ${err.message}\n`);
+      }
       resolve({ exitCode: 1, timedOut: false, truncated, error: err.message });
     });
 
     proc.on("close", (exitCode) => {
-      clearTimeout(timeout);
+      clearTimeout(timeoutTimer);
       resolve({ exitCode, timedOut, truncated, error: null });
     });
+
+    if (stdinContent !== undefined && proc.stdin) {
+      proc.stdin.write(stdinContent);
+      proc.stdin.end();
+    }
   });
 };
 
-export const runCode = ({ language, content, onStdout, onStderr }) => {
+export const runLocalFallback = async ({ language, content, onStdout, onStderr }) => {
+  if (language === "javascript") {
+    return runProcess({
+      cmd: "node",
+      args: [],
+      stdinContent: content ?? "",
+      onStdout,
+      onStderr,
+    });
+  }
+
+  if (language === "python") {
+    const pyCmd = process.platform === "win32" ? "python" : "python3";
+    return runProcess({
+      cmd: pyCmd,
+      args: ["-"],
+      stdinContent: content ?? "",
+      onStdout,
+      onStderr,
+    });
+  }
+
+  if (language === "c" || language === "cpp") {
+    const isCpp = language === "cpp";
+    const compiler = isCpp ? "g++" : "gcc";
+    const ext = isCpp ? "cpp" : "c";
+    const runDir = path.join(os.tmpdir(), `pc-run-${randomUUID()}`);
+    await fs.mkdir(runDir, { recursive: true });
+
+    const srcFile = path.join(runDir, `main.${ext}`);
+    const binName = process.platform === "win32" ? "main.exe" : "main.out";
+    const binFile = path.join(runDir, binName);
+
+    try {
+      await fs.writeFile(srcFile, content ?? "", "utf8");
+
+      const compileRes = await runProcess({
+        cmd: compiler,
+        args: ["-O2", "-pipe", srcFile, "-o", binFile],
+        cwd: runDir,
+        onStdout: onStderr,
+        onStderr,
+      });
+
+      if (compileRes.exitCode !== 0 || compileRes.error) {
+        return compileRes;
+      }
+
+      return await runProcess({
+        cmd: binFile,
+        args: [],
+        cwd: runDir,
+        onStdout,
+        onStderr,
+      });
+    } finally {
+      await fs.rm(runDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  if (language === "java") {
+    const runDir = path.join(os.tmpdir(), `pc-run-${randomUUID()}`);
+    await fs.mkdir(runDir, { recursive: true });
+
+    const className = getJavaClassName(content);
+    const srcFile = path.join(runDir, `${className}.java`);
+
+    try {
+      await fs.writeFile(srcFile, content ?? "", "utf8");
+
+      const compileRes = await runProcess({
+        cmd: "javac",
+        args: ["-d", runDir, srcFile],
+        cwd: runDir,
+        onStdout: onStderr,
+        onStderr,
+      });
+
+      if (compileRes.exitCode !== 0 || compileRes.error) {
+        return compileRes;
+      }
+
+      return await runProcess({
+        cmd: "java",
+        args: ["-cp", runDir, className],
+        cwd: runDir,
+        onStdout,
+        onStderr,
+      });
+    } finally {
+      await fs.rm(runDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  return { exitCode: 1, timedOut: false, truncated: false, error: `Unsupported fallback language: ${language}` };
+};
+
+export const runCode = async ({ language, content, onStdout, onStderr }) => {
   const target = LANGUAGE_IMAGES[language];
 
   if (!target) {
     return Promise.reject(new Error(`Unsupported language: ${language}`));
   }
 
+  const hasDocker = await isDockerDaemonAvailable();
+  if (!hasDocker) {
+    return runLocalFallback({ language, content, onStdout, onStderr });
+  }
+
   const containerName = `run-${randomUUID()}`;
+
+  let command = target.command;
+  if (language === "java") {
+    const className = getJavaClassName(content);
+    command = [
+      "sh",
+      "-c",
+      `cat > /scratch/${className}.java && javac -d /scratch /scratch/${className}.java && java -cp /scratch ${className}`,
+    ];
+  }
 
   const dockerArgs = [
     "run",
@@ -177,7 +335,7 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
     "--user",
     "1000:1000",
     target.image,
-    ...target.command,
+    ...command,
   ];
 
   return new Promise((resolve) => {
@@ -237,9 +395,12 @@ export const runCode = ({ language, content, onStdout, onStderr }) => {
         combinedStderr.includes("failed to connect to the docker API") ||
         combinedStderr.includes("daemon is running") ||
         combinedStderr.includes("Cannot connect to the Docker daemon") ||
+        combinedStderr.includes("error during connect") ||
+        combinedStderr.includes("permission denied") ||
         result.error?.includes("ENOENT");
 
-      if (isDockerConnError && (language === "javascript" || language === "python")) {
+      if (isDockerConnError) {
+        dockerAvailable = false;
         const localResult = await runLocalFallback({ language, content, onStdout, onStderr });
         return resolve(localResult);
       }

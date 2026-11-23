@@ -23,6 +23,8 @@
 - **Workspace Chat & Presence**: Real-time channel chat backed by **PostgreSQL persistence** and active status indicators.
 - **Role-Based Access Control (RBAC)**: Fine-grained workspace permissions for **Owner**, **Admin**, **Editor**, and **Viewer** roles.
 - **Single-Use Invitation Codes**: Secure invitation code generator with custom roles and a 7-day expiration window.
+- **Account Privacy & Self-Deletion**: Full user data sovereignty with permanent account deletion (cascade erasure of owned workspaces, files, and messages) and multi-device session revocation via Dashboard Settings.
+- **Terms & Conditions**: Transparent developer agreements covering acceptable use, sandboxed execution safety, and 100% user code ownership.
 - **Hardened Production Architecture**: WebSocket origin validation, 512KB payload limits, non-root Docker containers, fail-fast production secret checks, and dedicated `/health` endpoints.
 
 ---

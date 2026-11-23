@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const Footer = () => {
   return (
     <footer className="bg-[#050505] border-t border-zinc-900 text-white mt-24">
@@ -83,12 +85,12 @@ const Footer = () => {
                 Contact
               </a>
 
-              <a
-                href="#"
+              <Link
+                to="/terms"
                 className="hover:text-white transition"
               >
-                Privacy Policy
-              </a>
+                Terms & Conditions
+              </Link>
 
             </div>
 

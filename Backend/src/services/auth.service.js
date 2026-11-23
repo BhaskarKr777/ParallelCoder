@@ -148,3 +148,9 @@ export const revokeAllSessions = async (userId) => {
     data: { tokenVersion: { increment: 1 } },
   });
 };
+
+export const deleteUserAccount = async (userId) => {
+  return prisma.user.delete({
+    where: { id: userId },
+  });
+};

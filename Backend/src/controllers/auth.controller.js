@@ -7,6 +7,7 @@ import {
   issueTokens,
   verifyRefreshToken,
   revokeAllSessions,
+  deleteUserAccount,
   getUserById,
 } from "../services/auth.service.js";
 
@@ -104,6 +105,17 @@ export const logoutAll = async (req, res, next) => {
 
 export const me = (req, res) => {
   res.status(200).json({ success: true, user: req.user });
+};
+
+export const deleteAccount = async (req, res, next) => {
+  try {
+    await deleteUserAccount(req.user.id);
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    res.status(200).json({ success: true, message: "Account deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const refresh = async (req, res, next) => {

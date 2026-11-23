@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import CreateWorkspaceModal from "../components/dashboard/CreateWorkspaceModal";
+import SettingsModal from "../components/dashboard/SettingsModal";
 import useAuthStore from "../store/authStore";
 import useWorkspaceStore from "../store/workspaceStore";
 import { workspaceApi } from "../services/api";
@@ -33,6 +34,7 @@ const formatTimeAgo = (dateInput) => {
 
 const Dashboard = () => {
   const [openModal, setOpenModal] = useState(false);
+  const [openSettingsModal, setOpenSettingsModal] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
@@ -105,7 +107,10 @@ const Dashboard = () => {
               Collaborators
             </button>
 
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-zinc-800/60 text-zinc-400 hover:text-white transition">
+            <button
+              onClick={() => setOpenSettingsModal(true)}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-zinc-800/60 text-zinc-400 hover:text-white transition"
+            >
               <Settings size={20} />
               Settings
             </button>
@@ -169,6 +174,15 @@ const Dashboard = () => {
               >
                 <Plus size={18} />
                 Create Workspace
+              </button>
+
+              <button
+                onClick={() => setOpenSettingsModal(true)}
+                title="Account Settings"
+                className="border border-zinc-700 bg-zinc-900/40 backdrop-blur-xl px-4 py-3 rounded-2xl text-zinc-300 hover:text-white hover:border-zinc-500 transition flex items-center gap-2"
+              >
+                <Settings size={18} />
+                <span className="hidden sm:inline">Settings</span>
               </button>
 
               <form onSubmit={handleJoinWorkspace} className="flex gap-2">
@@ -289,6 +303,12 @@ const Dashboard = () => {
       <CreateWorkspaceModal
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
+      />
+
+      {/* Account Settings Modal */}
+      <SettingsModal
+        isOpen={openSettingsModal}
+        onClose={() => setOpenSettingsModal(false)}
       />
 
     </section>

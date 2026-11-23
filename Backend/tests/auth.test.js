@@ -125,4 +125,22 @@ describe("auth", () => {
     const after = await request(app).get("/api/auth/me").set("Cookie", `accessToken=${oldToken}`);
     expect(after.status).toBe(401);
   });
+
+  it("deletes user account, removes cookies, and rejects further authentication", async () => {
+    const email = uniqueEmail();
+    const agent = request.agent(app);
+
+    await agent
+      .post("/api/auth/register")
+      .send({ email, username: "ToDelete", password: "TestPass123!" })
+      .expect(201);
+
+    const deleteRes = await agent.delete("/api/auth/me");
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.success).toBe(true);
+
+    // Further requests with this agent should now be 401
+    const checkRes = await agent.get("/api/auth/me");
+    expect(checkRes.status).toBe(401);
+  });
 });

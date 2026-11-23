@@ -43,6 +43,8 @@ export const authApi = {
 
   logoutAll: () => request("/auth/logout-all", { method: "POST" }),
 
+  deleteAccount: () => request("/auth/me", { method: "DELETE" }),
+
   me: () => request("/auth/me"),
 
   googleUrl: `${API_BASE_URL}/auth/google`,

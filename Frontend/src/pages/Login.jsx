@@ -260,13 +260,14 @@ const Login = () => {
                 </div>
 
                 {/* Footer */}
-                <p className="relative z-10 mt-8 text-sm text-zinc-600 text-center leading-relaxed">
-                  By continuing, you agree to our
-                  <span className="text-zinc-400"> Terms </span>
-                  and
-                  <span className="text-zinc-400">
-                    {" "}Privacy Policy
-                  </span>
+                <p className="relative z-10 mt-8 text-sm text-zinc-500 text-center leading-relaxed">
+                  By continuing, you agree to our{" "}
+                  <Link
+                    to="/terms"
+                    className="text-zinc-300 hover:text-white underline underline-offset-4 transition font-medium"
+                  >
+                    Terms & Conditions
+                  </Link>
                 </p>
 
               </div>

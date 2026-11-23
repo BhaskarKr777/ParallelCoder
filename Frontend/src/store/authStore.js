@@ -40,6 +40,12 @@ const useAuthStore = create((set) => ({
     socket.disconnect();
     set({ user: null, isAuthenticated: false, isLoading: false });
   },
+
+  deleteAccount: async () => {
+    await authApi.deleteAccount();
+    socket.disconnect();
+    set({ user: null, isAuthenticated: false, isLoading: false });
+  },
 }));
 
 export default useAuthStore;

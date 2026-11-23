@@ -10,6 +10,7 @@ import {
   login,
   logout,
   logoutAll,
+  deleteAccount,
   me,
   refresh,
   oauthCallback,
@@ -29,6 +30,7 @@ router.post("/register", authLimiter, register);
 router.post("/login", authLimiter, login);
 router.post("/logout", logout);
 router.post("/logout-all", requireAuth, logoutAll);
+router.delete("/me", requireAuth, deleteAccount);
 router.post("/refresh", refresh);
 router.get("/me", requireAuth, me);
 

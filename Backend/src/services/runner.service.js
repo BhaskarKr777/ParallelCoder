@@ -128,7 +128,17 @@ export const isDockerDaemonAvailable = async () => {
   });
 };
 
-const runProcess = ({ cmd, args, cwd, stdinContent, onStdout, onStderr, timeoutMs = TIMEOUT_MS }) => {
+const runProcess = ({
+  cmd,
+  args,
+  cwd,
+  stdinContent,
+  closeStdin = true,
+  onSession,
+  onStdout,
+  onStderr,
+  timeoutMs = TIMEOUT_MS,
+}) => {
   return new Promise((resolve) => {
     let outputBytes = 0;
     let truncated = false;
@@ -139,10 +149,27 @@ const runProcess = ({ cmd, args, cwd, stdinContent, onStdout, onStderr, timeoutM
     try {
       proc = spawn(cmd, args, {
         cwd,
-        stdio: [stdinContent !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
+        stdio: ["pipe", "pipe", "pipe"],
       });
     } catch (err) {
       return resolve({ exitCode: 1, timedOut: false, truncated: false, error: err.message });
+    }
+
+    if (onSession && proc) {
+      onSession({
+        writeStdin: (chunk) => {
+          if (proc.stdin && !proc.stdin.destroyed) {
+            proc.stdin.write(chunk);
+          }
+        },
+        kill: () => {
+          try {
+            proc.kill("SIGKILL");
+          } catch {
+            // ignore
+          }
+        },
+      });
     }
 
     const forward = (emit) => (chunk) => {
@@ -182,31 +209,67 @@ const runProcess = ({ cmd, args, cwd, stdinContent, onStdout, onStderr, timeoutM
 
     if (stdinContent !== undefined && proc.stdin) {
       proc.stdin.write(stdinContent);
+      if (closeStdin) {
+        proc.stdin.end();
+      }
+    } else if (closeStdin && proc.stdin) {
       proc.stdin.end();
     }
   });
 };
 
-export const runLocalFallback = async ({ language, content, onStdout, onStderr }) => {
+export const runLocalFallback = async ({
+  language,
+  content,
+  stdin,
+  closeStdin = false,
+  onSession,
+  onStdout,
+  onStderr,
+}) => {
   if (language === "javascript") {
-    return runProcess({
-      cmd: "node",
-      args: [],
-      stdinContent: content ?? "",
-      onStdout,
-      onStderr,
-    });
+    const runDir = path.join(os.tmpdir(), `pc-run-${randomUUID()}`);
+    await fs.mkdir(runDir, { recursive: true });
+    const srcFile = path.join(runDir, "main.js");
+
+    try {
+      await fs.writeFile(srcFile, content ?? "", "utf8");
+      return await runProcess({
+        cmd: "node",
+        args: [srcFile],
+        cwd: runDir,
+        stdinContent: stdin,
+        closeStdin,
+        onSession,
+        onStdout,
+        onStderr,
+      });
+    } finally {
+      await fs.rm(runDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   if (language === "python") {
+    const runDir = path.join(os.tmpdir(), `pc-run-${randomUUID()}`);
+    await fs.mkdir(runDir, { recursive: true });
+    const srcFile = path.join(runDir, "main.py");
     const pyCmd = process.platform === "win32" ? "python" : "python3";
-    return runProcess({
-      cmd: pyCmd,
-      args: ["-"],
-      stdinContent: content ?? "",
-      onStdout,
-      onStderr,
-    });
+
+    try {
+      await fs.writeFile(srcFile, content ?? "", "utf8");
+      return await runProcess({
+        cmd: pyCmd,
+        args: [srcFile],
+        cwd: runDir,
+        stdinContent: stdin,
+        closeStdin,
+        onSession,
+        onStdout,
+        onStderr,
+      });
+    } finally {
+      await fs.rm(runDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   if (language === "c" || language === "cpp") {
@@ -227,6 +290,7 @@ export const runLocalFallback = async ({ language, content, onStdout, onStderr }
         cmd: compiler,
         args: ["-O2", "-pipe", srcFile, "-o", binFile],
         cwd: runDir,
+        closeStdin: true,
         onStdout: onStderr,
         onStderr,
       });
@@ -239,6 +303,9 @@ export const runLocalFallback = async ({ language, content, onStdout, onStderr }
         cmd: binFile,
         args: [],
         cwd: runDir,
+        stdinContent: stdin,
+        closeStdin,
+        onSession,
         onStdout,
         onStderr,
       });
@@ -261,6 +328,7 @@ export const runLocalFallback = async ({ language, content, onStdout, onStderr }
         cmd: "javac",
         args: ["-d", runDir, srcFile],
         cwd: runDir,
+        closeStdin: true,
         onStdout: onStderr,
         onStderr,
       });
@@ -273,6 +341,9 @@ export const runLocalFallback = async ({ language, content, onStdout, onStderr }
         cmd: "java",
         args: ["-cp", runDir, className],
         cwd: runDir,
+        stdinContent: stdin,
+        closeStdin,
+        onSession,
         onStdout,
         onStderr,
       });
@@ -284,7 +355,15 @@ export const runLocalFallback = async ({ language, content, onStdout, onStderr }
   return { exitCode: 1, timedOut: false, truncated: false, error: `Unsupported fallback language: ${language}` };
 };
 
-export const runCode = async ({ language, content, onStdout, onStderr }) => {
+export const runCode = async ({
+  language,
+  content,
+  stdin,
+  closeStdin = false,
+  onSession,
+  onStdout,
+  onStderr,
+}) => {
   const target = LANGUAGE_IMAGES[language];
 
   if (!target) {
@@ -293,18 +372,43 @@ export const runCode = async ({ language, content, onStdout, onStderr }) => {
 
   const hasDocker = await isDockerDaemonAvailable();
   if (!hasDocker) {
-    return runLocalFallback({ language, content, onStdout, onStderr });
+    return runLocalFallback({
+      language,
+      content,
+      stdin,
+      closeStdin,
+      onSession,
+      onStdout,
+      onStderr,
+    });
   }
 
   const containerName = `run-${randomUUID()}`;
+  const base64Code = Buffer.from(content ?? "", "utf8").toString("base64");
 
   let command = target.command;
-  if (language === "java") {
+  if (language === "javascript") {
+    command = ["sh", "-c", `echo "${base64Code}" | base64 -d > /tmp/main.js && node /tmp/main.js`];
+  } else if (language === "python") {
+    command = ["sh", "-c", `echo "${base64Code}" | base64 -d > /tmp/main.py && python3 /tmp/main.py`];
+  } else if (language === "c") {
+    command = [
+      "sh",
+      "-c",
+      `echo "${base64Code}" | base64 -d > /scratch/main.c && gcc -O2 -pipe /scratch/main.c -o /scratch/a.out && /scratch/a.out`,
+    ];
+  } else if (language === "cpp") {
+    command = [
+      "sh",
+      "-c",
+      `echo "${base64Code}" | base64 -d > /scratch/main.cpp && g++ -O2 -pipe /scratch/main.cpp -o /scratch/a.out && /scratch/a.out`,
+    ];
+  } else if (language === "java") {
     const className = getJavaClassName(content);
     command = [
       "sh",
       "-c",
-      `cat > /scratch/${className}.java && javac -d /scratch /scratch/${className}.java && java -cp /scratch ${className}`,
+      `echo "${base64Code}" | base64 -d > /scratch/${className}.java && javac -d /scratch /scratch/${className}.java && java -cp /scratch ${className}`,
     ];
   }
 
@@ -327,7 +431,8 @@ export const runCode = async ({ language, content, onStdout, onStderr }) => {
     "--read-only",
     "--tmpfs",
     "/tmp:rw,noexec,nosuid,size=16m",
-    ...(target.needsScratch ? ["--tmpfs", "/scratch:rw,nosuid,exec,size=96m"] : []),
+    "--tmpfs",
+    "/scratch:rw,nosuid,exec,size=96m",
     "--cap-drop",
     "ALL",
     "--security-opt",
@@ -347,6 +452,22 @@ export const runCode = async ({ language, content, onStdout, onStderr }) => {
     let settled = false;
 
     const dockerStderrChunks = [];
+
+    const killContainer = () => {
+      spawn("docker", ["kill", containerName]).on("error", () => {});
+      forceKillTimer = setTimeout(() => proc.kill("SIGKILL"), KILL_GRACE_MS);
+    };
+
+    if (onSession) {
+      onSession({
+        writeStdin: (chunk) => {
+          if (proc.stdin && !proc.stdin.destroyed) {
+            proc.stdin.write(chunk);
+          }
+        },
+        kill: () => killContainer(),
+      });
+    }
 
     const forward = (emit) => (chunk) => {
       if (truncated) return;
@@ -371,18 +492,19 @@ export const runCode = async ({ language, content, onStdout, onStderr }) => {
 
     let forceKillTimer = null;
 
-    const killContainer = () => {
-      spawn("docker", ["kill", containerName]).on("error", () => {});
-      forceKillTimer = setTimeout(() => proc.kill("SIGKILL"), KILL_GRACE_MS);
-    };
-
     const timeout = setTimeout(() => {
       timedOut = true;
       killContainer();
     }, TIMEOUT_MS);
 
-    proc.stdin.write(content ?? "");
-    proc.stdin.end();
+    if (stdin !== undefined && proc.stdin) {
+      proc.stdin.write(stdin);
+      if (closeStdin) {
+        proc.stdin.end();
+      }
+    } else if (closeStdin && proc.stdin) {
+      proc.stdin.end();
+    }
 
     const finish = async (result) => {
       if (settled) return;
@@ -401,7 +523,15 @@ export const runCode = async ({ language, content, onStdout, onStderr }) => {
 
       if (isDockerConnError) {
         dockerAvailable = false;
-        const localResult = await runLocalFallback({ language, content, onStdout, onStderr });
+        const localResult = await runLocalFallback({
+          language,
+          content,
+          stdin,
+          closeStdin,
+          onSession,
+          onStdout,
+          onStderr,
+        });
         return resolve(localResult);
       }
 

@@ -7,6 +7,11 @@ const useRunStore = create((set) => ({
   output: [],
   exitInfo: null,
   errorMessage: null,
+  customInput: "",
+  activeTab: "terminal", // "terminal" | "input"
+
+  setCustomInput: (customInput) => set({ customInput }),
+  setActiveTab: (activeTab) => set({ activeTab }),
 
   startRun: (runId, initiatedBy) =>
     set({
@@ -16,16 +21,17 @@ const useRunStore = create((set) => ({
       output: [],
       exitInfo: null,
       errorMessage: null,
+      activeTab: "terminal",
     }),
 
-  appendOutput: (runId, stream, text) =>
+  appendOutput: (runId, stream, text, isInput = false) =>
     set((state) => {
       if (state.runId !== runId) return state;
 
       return {
         output: [
           ...state.output,
-          { id: `${runId}-${state.output.length}`, stream, text },
+          { id: `${runId}-${state.output.length}`, stream, text, isInput },
         ],
       };
     }),

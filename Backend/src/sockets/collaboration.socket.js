@@ -13,6 +13,7 @@ import { runCode, isRunnableLanguage } from "../services/runner.service.js";
    Presence & Rate Limiting State
 -------------------------------- */
 const activeUsers = new Map();
+const activeSessions = new Map(); // runId -> { writeStdin, kill, socketId, workspaceId }
 
 /*
   Global cap on simultaneously running sandboxed containers,
@@ -35,6 +36,8 @@ const runSchema = z.object({
   fileId: z.string().min(1).max(100),
   language: z.string().min(1).max(50),
   content: z.string().max(MAX_CODE_LENGTH),
+  stdin: z.string().max(MAX_CODE_LENGTH).optional(),
+  closeStdin: z.boolean().optional(),
 });
 
 /*
@@ -229,7 +232,7 @@ export const registerCollaborationHandlers = (io) => {
         return;
       }
 
-      const { workspaceId, fileId, language, content } = parsed.data;
+      const { workspaceId, fileId, language, content, stdin, closeStdin } = parsed.data;
 
       if (!socket.data.workspaces.has(workspaceId)) {
         socket.emit("run:error", { message: "Not a member of this workspace" });
@@ -270,6 +273,15 @@ export const registerCollaborationHandlers = (io) => {
         const result = await runCode({
           language,
           content,
+          stdin,
+          closeStdin,
+          onSession: (session) => {
+            activeSessions.set(runId, {
+              ...session,
+              socketId: socket.id,
+              workspaceId,
+            });
+          },
           onStdout: (chunk) => io.to(workspaceId).emit("run:stdout", { runId, chunk }),
           onStderr: (chunk) => io.to(workspaceId).emit("run:stderr", { runId, chunk }),
         });
@@ -286,15 +298,62 @@ export const registerCollaborationHandlers = (io) => {
           error: err.message,
         });
       } finally {
+        activeSessions.delete(runId);
         socket.data.running = false;
         activeRunCount -= 1;
       }
     });
 
     /*
+      Interactive Terminal Stdin Input
+    */
+    socket.on("run:stdin", (data) => {
+      if (!data || typeof data !== "object") return;
+      const { runId, chunk } = data;
+      if (!runId || typeof chunk !== "string") return;
+
+      const session = activeSessions.get(runId);
+      if (!session) return;
+      if (session.workspaceId && !socket.data.workspaces.has(session.workspaceId)) return;
+
+      session.writeStdin(chunk);
+      io.to(session.workspaceId).emit("run:stdout", {
+        runId,
+        chunk,
+        isInput: true,
+      });
+    });
+
+    /*
+      Stop running execution
+    */
+    socket.on("run:stop", (data) => {
+      if (!data || typeof data !== "object") return;
+      const { runId } = data;
+      if (!runId) return;
+
+      const session = activeSessions.get(runId);
+      if (!session) return;
+      if (session.workspaceId && !socket.data.workspaces.has(session.workspaceId)) return;
+
+      session.kill();
+      io.to(session.workspaceId).emit("run:stderr", {
+        runId,
+        chunk: "\n[Process stopped by user]\n",
+      });
+    });
+
+    /*
       Disconnect
     */
     socket.on("disconnect", () => {
+      for (const [runId, session] of activeSessions.entries()) {
+        if (session.socketId === socket.id) {
+          session.kill();
+          activeSessions.delete(runId);
+        }
+      }
+
       const user = activeUsers.get(socket.id);
 
       if (user) {

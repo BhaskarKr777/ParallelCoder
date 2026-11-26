@@ -10,8 +10,8 @@ export const useRunner = () => {
 
   useEffect(() => {
     const onStart = ({ runId, initiatedBy }) => startRun(runId, initiatedBy);
-    const onStdout = ({ runId, chunk }) => appendOutput(runId, "stdout", chunk);
-    const onStderr = ({ runId, chunk }) => appendOutput(runId, "stderr", chunk);
+    const onStdout = ({ runId, chunk, isInput }) => appendOutput(runId, "stdout", chunk, isInput);
+    const onStderr = ({ runId, chunk }) => appendOutput(runId, "stderr", chunk, false);
     const onExit = ({ runId, ...exitInfo }) => finishRun(runId, exitInfo);
     const onError = ({ message }) => setError(message);
 

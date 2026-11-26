@@ -105,6 +105,116 @@ describe("runner.service", () => {
     expect(result.exitCode).toBe(0);
   }, 20000);
 
+  it("supports Java Scanner for DSA problems with stdin", async () => {
+    const stdout = [];
+    const javaCode = `
+import java.util.Scanner;
+public class Solution {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        if (sc.hasNextInt()) {
+            int n = sc.nextInt();
+            int sum = 0;
+            for (int i = 0; i < n; i++) {
+                sum += sc.nextInt();
+            }
+            System.out.println("SUM=" + sum);
+        }
+    }
+}
+    `;
+
+    const result = await runCode({
+      language: "java",
+      content: javaCode,
+      stdin: "3\n10 25 15\n",
+      closeStdin: true,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("SUM=50");
+    expect(result.exitCode).toBe(0);
+  }, 25000);
+
+  it("supports C++ cin for DSA problems with stdin", async () => {
+    const stdout = [];
+    const cppCode = `
+#include <iostream>
+using namespace std;
+int main() {
+    int n, sum = 0;
+    if (cin >> n) {
+        for (int i = 0; i < n; i++) {
+            int val; cin >> val; sum += val;
+        }
+        cout << "CPP_SUM=" << sum << endl;
+    }
+    return 0;
+}
+    `;
+
+    const result = await runCode({
+      language: "cpp",
+      content: cppCode,
+      stdin: "4\n1 2 3 4\n",
+      closeStdin: true,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("CPP_SUM=10");
+    expect(result.exitCode).toBe(0);
+  }, 25000);
+
+  it("supports Python input() for DSA problems with stdin", async () => {
+    const stdout = [];
+    const pyCode = `
+n = int(input())
+nums = [int(x) for x in input().split()]
+print(f"PY_SUM={sum(nums)}")
+    `;
+
+    const result = await runCode({
+      language: "python",
+      content: pyCode,
+      stdin: "3\n5 15 30\n",
+      closeStdin: true,
+      onStdout: (chunk) => stdout.push(chunk),
+      onStderr: () => {},
+    });
+
+    expect(stdout.join("")).toContain("PY_SUM=50");
+    expect(result.exitCode).toBe(0);
+  }, 20000);
+
+  it("supports interactive session and stop kill", async () => {
+    let sessionRef = null;
+    const pyInfinite = `
+import time
+while True:
+    time.sleep(0.1)
+    `;
+
+    const runPromise = runCode({
+      language: "python",
+      content: pyInfinite,
+      onSession: (s) => {
+        sessionRef = s;
+      },
+      onStdout: () => {},
+      onStderr: () => {},
+    });
+
+    // Give process a moment to spin up, then trigger kill
+    await new Promise((r) => setTimeout(r, 400));
+    expect(sessionRef).toBeDefined();
+    sessionRef.kill();
+
+    const result = await runPromise;
+    expect(result).toBeDefined();
+  }, 20000);
+
   it.skipIf(!hasDocker)("has no network access from inside the sandbox", async () => {
     const stdout = [];
 

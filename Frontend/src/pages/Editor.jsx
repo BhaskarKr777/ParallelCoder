@@ -17,6 +17,7 @@ import { getRoomText } from "../services/yjs";
 import useAuthStore from "../store/authStore";
 import useWorkspaceStore from "../store/workspaceStore";
 import usePreviewStore from "../store/previewStore";
+import useRunStore from "../store/runStore";
 
 import socket from "../services/socket";
 
@@ -182,11 +183,16 @@ const Editor = () => {
 
     usePreviewStore.getState().closePreview();
 
+    const customInput = useRunStore.getState().customInput;
+    const hasCustomInput = typeof customInput === "string" && customInput.trim().length > 0;
+
     socket.emit("run:start", {
       workspaceId,
       fileId: activeTab.id,
       language,
       content,
+      stdin: hasCustomInput ? customInput : undefined,
+      closeStdin: hasCustomInput,
     });
   };
 
